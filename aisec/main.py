@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 from . import __version__
 from .challenges import all_challenges, get
 from .challenges.base import Attempt
-from .flags import flag_for, points_for, verify
+from .flags import flag_for, level_key, points_for, solutions_enabled, verify
 from .levels import LEVEL_NOTES, Level
 from .state import SESSION_COOKIE, get_or_create, reset
 
@@ -60,6 +60,7 @@ class AttemptIn(BaseModel):
 class VerifyIn(BaseModel):
     level: str = "low"
     flag: str = ""
+    plane: str = "offline"  # "offline" or "live"
 
 
 def _session_response(response: Response, session) -> None:
@@ -180,11 +181,14 @@ def verify_flag(
     _session_response(response, session)
 
     level = Level.parse(payload.level)
-    ok = verify(challenge_id, level.value, payload.flag)
+    live = payload.plane == "live"
+    key = level_key(level.value, payload.plane)
+    ok = verify(challenge_id, key, payload.flag)
     awarded = 0
     if ok:
-        first = session.mark_solved(challenge_id, level.value)
-        awarded = points_for(level.value) if first else 0
+        solve_id = f"live:{challenge_id}" if live else challenge_id
+        first = session.mark_solved(solve_id, key)
+        awarded = points_for(key) if first else 0
     return {"valid": ok, "awarded": awarded, "score": session.score}
 
 
@@ -203,7 +207,7 @@ def hint(challenge_id: str, level: int = 0) -> dict:
 
 @app.get("/api/solution/{challenge_id}", tags=["challenges"])
 def solution(challenge_id: str) -> dict:
-    if os.getenv("AISEC_ALLOW_SOLUTIONS", "1") != "1":
+    if not solutions_enabled():
         raise HTTPException(status_code=403, detail="solutions disabled on this host")
     challenge = get(challenge_id)
     if challenge is None:

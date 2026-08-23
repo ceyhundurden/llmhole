@@ -9,12 +9,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Cookie, Response
 from pydantic import BaseModel, Field
 
-from .flags import flag_for, points_for
+from .flags import flag_for, level_key, points_for
 from .levels import Level
 from .live_engine import (
     DEFAULT_ENDPOINT,
     SUGGESTED_MODELS,
     LiveError,
+    endpoint_allowed,
     list_models,
     list_scenarios,
     normalise_endpoint,
@@ -123,6 +124,16 @@ def connect(
     if not model:
         return {"ok": False, "error": {"kind": "no_model", "message": "Pick a model name."}}
 
+    if not endpoint_allowed(payload.endpoint):
+        return {
+            "ok": False,
+            "error": {
+                "kind": "endpoint_not_allowed",
+                "message": "That endpoint host is not allow-listed. Set "
+                "AISEC_ALLOWED_LLM_HOSTS to permit it.",
+            },
+        }
+
     endpoint = normalise_endpoint(payload.endpoint)
     conn = set_conn(session.id, endpoint, model)
     return {"ok": True, "endpoint": conn.endpoint, "model": conn.model}
@@ -214,9 +225,10 @@ def live_attempt(
         },
     }
     if result.solved:
-        first = session.mark_solved(f"live:{scenario_id}", level.value)
-        body["flag"] = flag_for(scenario_id, f"live-{level.value}")
-        body["awarded"] = points_for(level.value) if first else 0
+        key = level_key(level.value, "live")
+        first = session.mark_solved(f"live:{scenario_id}", key)
+        body["flag"] = flag_for(scenario_id, key)
+        body["awarded"] = points_for(key) if first else 0
         body["first_solve"] = first
         body["score"] = session.score
     return body

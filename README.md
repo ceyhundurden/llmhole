@@ -193,8 +193,23 @@ The UI is a thin client over a small JSON API:
 
 | Env var | Default | Meaning |
 |---------|---------|---------|
-| `AISEC_FLAG_SECRET` | `aisec-lab-default-secret` | HMAC key for flags; rotate for CTF hosting |
-| `AISEC_ALLOW_SOLUTIONS` | `1` | Set to `0` to hide the reference solutions |
+| `AISEC_FLAG_SECRET` | dev default | HMAC key for flags; **required** in CTF mode |
+| `AISEC_ALLOW_SOLUTIONS` | `1` (`0` in CTF) | Set to `0` to hide the reference solutions |
+| `AISEC_CTF_MODE` | `0` | Fail fast on the default secret; hide solutions |
+| `AISEC_BIND` | `127.0.0.1` | Interface the container publishes on |
+| `AISEC_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
+| `AISEC_MAX_SESSIONS` / `AISEC_SESSION_TTL` / `AISEC_MAX_BUCKET_ITEMS` | `5000` / `21600` / `200` | Session memory bounds |
+
+## Security & scope
+
+The lab is vulnerable **on purpose**, but its own infrastructure is not.
+[`SECURITY.md`](SECURITY.md) draws the line between the intentional lessons
+(keep them) and real bugs in the lab itself (SSRF, predictable flag secret,
+network exposure, unbounded memory, …), each locked by
+[`tests/test_out_of_scope.py`](tests/test_out_of_scope.py). Hosting a CTF? Set a
+unique `AISEC_FLAG_SECRET` and `AISEC_CTF_MODE=1`. The Docker image binds to
+loopback, runs read-only with dropped capabilities, and only reaches
+allow-listed LLM hosts.
 
 ## Project layout
 
