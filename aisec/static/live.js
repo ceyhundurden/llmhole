@@ -52,26 +52,33 @@
       api("/api/live/providers"),
       api("/api/live/scenarios"),
     ]);
-    live.providers = prov.providers || [];
+    live.provider = prov;
     live.scenarios = scen.scenarios || [];
 
     const psel = $("#live-provider");
     psel.innerHTML = "";
-    for (const p of live.providers) {
-      const o = el("option", null, p.label);
-      o.value = p.id;
-      o.dataset.default = p.default_model;
-      psel.appendChild(o);
+    const o = el("option", null, prov.label);
+    o.value = prov.provider;
+    psel.appendChild(o);
+
+    $("#live-endpoint").placeholder = prov.default_endpoint;
+    if (!$("#live-endpoint").value) $("#live-endpoint").value = prov.default_endpoint;
+
+    const dl = $("#live-model-list");
+    dl.innerHTML = "";
+    for (const m of prov.suggested_models || []) {
+      const opt = el("option");
+      opt.value = m.name;
+      opt.label = `${m.note}${m.tools ? " · tool-capable" : ""}`;
+      dl.appendChild(opt);
     }
-    psel.addEventListener("change", syncModelPlaceholder);
-    syncModelPlaceholder();
 
     const ssel = $("#live-scenario");
     ssel.innerHTML = "";
     for (const s of live.scenarios) {
-      const o = el("option", null, `${s.owasp} · ${s.title}`);
-      o.value = s.id;
-      ssel.appendChild(o);
+      const item = el("option", null, `${s.owasp} · ${s.title}`);
+      item.value = s.id;
+      ssel.appendChild(item);
     }
     ssel.addEventListener("change", () => selectScenario(ssel.value));
 
@@ -80,57 +87,38 @@
     $("#live-runner").hidden = false;
   }
 
-  function syncModelPlaceholder() {
-    const opt = $("#live-provider").selectedOptions[0];
-    if (opt) $("#live-model").placeholder = opt.dataset.default || "(provider default)";
-  }
-
   async function refreshStatus() {
     const s = await api("/api/live/status");
     const box = $("#live-status");
     if (s.connected) {
       live.connected = true;
       box.innerHTML = "";
-      box.appendChild(
-        el(
-          "span",
-          "ok",
-          `Connected · ${s.provider} · ${s.model} · key ${s.key}`
-        )
-      );
-      box.appendChild(
-        el(
-          "span",
-          "budget",
-          `  —  ${s.remaining_requests} requests / ${s.remaining_tokens} tokens left`
-        )
-      );
+      box.appendChild(el("span", "ok", `Connected · ${s.model} @ ${s.endpoint}`));
+      box.appendChild(el("span", "budget", `  —  ${s.remaining_requests} requests left`));
     } else {
       live.connected = false;
-      box.textContent = "Not connected. Connect a key to run live scenarios.";
+      box.textContent = "Not connected. Connect a local model to run live scenarios.";
     }
   }
 
   async function connect() {
-    const key = $("#live-key").value.trim();
-    if (!key) {
-      alert("Enter an API key.");
+    const model = $("#live-model").value.trim();
+    if (!model) {
+      alert("Enter a model name (e.g. llama3.2). Pull it first with: ollama pull <model>");
       return;
     }
-    const provider = $("#live-provider").value;
-    const model = $("#live-model").value.trim();
+    const endpoint = $("#live-endpoint").value.trim();
     const btn = $("#live-connect");
     btn.disabled = true;
     try {
-      const r = await api("/api/live/key", {
+      const r = await api("/api/live/connect", {
         method: "POST",
-        body: JSON.stringify({ provider, model, key }),
+        body: JSON.stringify({ endpoint, model }),
       });
       if (!r.ok) {
         alert(r.error ? r.error.message : "Could not connect.");
         return;
       }
-      $("#live-key").value = ""; // never keep it in the DOM
       await refreshStatus();
     } finally {
       btn.disabled = false;
@@ -138,7 +126,7 @@
   }
 
   async function disconnect() {
-    await api("/api/live/key", { method: "DELETE" });
+    await api("/api/live/connect", { method: "DELETE" });
     await refreshStatus();
   }
 

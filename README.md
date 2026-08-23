@@ -110,37 +110,59 @@ The suite proves every reference exploit still solves its level and that the
 guardrails still bite where they should — so the lab stays exploitable *and*
 non-trivial as it changes.
 
-## Live Mode (optional — bring your own key)
+## Live Mode (optional — a local model via Ollama)
 
 Everything above runs offline against a deterministic mock model. **Live Mode**
 is a separate, opt-in tab that runs a subset of the same challenges against a
-*real* model so you can feel yourself talking an actual LLM into misbehaving.
+*real* model — running entirely on **your own machine** via
+[Ollama](https://ollama.com). Feel yourself talking an actual LLM into
+misbehaving, with no internet and no API key.
 
-- **It is entirely optional.** The default lab never touches the network.
-- **You supply your own API key** (Anthropic or OpenAI, a cheap model like
-  Claude Haiku or `gpt-4o-mini`). We never provide one.
-- **Your key is yours alone.** It is entered in the browser, held in memory for
-  that session only, and **never written to disk, never logged, and never echoed
-  back** (the UI only shows the last 4 characters). It is not stored on the
-  server. Requests go directly from *your* self-hosted container to the provider.
-- **Cost and responsibility are yours.** Because you host it and use your own
-  key, you pay for your own usage. Every request is hard-capped
-  (`max_tokens=512`) and each session is rate-limited (25 requests / 40k tokens)
-  so you can't drain your credits by accident.
-- **Results are non-deterministic.** A real model may refuse, comply, or vary
-  between runs — a flag may not appear on every attempt. That variance *is* the
-  exercise.
+- **Fully local, no internet, no key.** Once you've pulled a model, requests go
+  to `http://localhost:11434` and never leave your box. There are no credentials
+  anywhere and nothing to leak.
+- **You run the model.** Install Ollama, then:
+  ```bash
+  ollama pull llama3.2      # or mistral, llama3.1, qwen2.5, ...
+  ollama serve              # usually already running
+  ```
+  In the Live Arena tab, keep the default endpoint, type the model name, Connect.
+- **Bounded by design.** Every call is output-capped (`num_predict=512`) and the
+  session has a request cap so a runaway loop can't tie up your hardware.
+- **Non-deterministic.** A real model may refuse, comply, or vary between runs —
+  a flag may not appear on every attempt. That variance *is* the exercise, and
+  the success check is deliberately whitespace/case-tolerant to catch reshaped
+  answers.
 
 Live scenarios: direct prompt injection, system-prompt leakage, indirect
-injection, insecure output handling, and — via real function-calling — excessive
+injection, insecure output handling, and — via real tool-calling — excessive
 agency. **Unbounded Consumption is demonstration-only in Live Mode**: it is never
-sent to a real model (forcing a live model to emit a huge response is precisely
-the resource-exhaustion attack it teaches, and it would burn your quota), so it
-runs against the offline engine instead.
+sent to a real model (forcing a model to emit a huge response is precisely the
+resource-exhaustion attack it teaches), so it runs against the offline engine.
 
-Only two outbound hosts are ever contacted, and only in Live Mode:
-`api.anthropic.com` and `api.openai.com`. If `httpx` or a provider is
-unavailable, Live Mode simply stays off and the offline lab is unaffected.
+If Ollama isn't running or the model isn't pulled, Live Mode returns a clear,
+actionable error and the offline lab is completely unaffected.
+
+> **Running the lab in Docker with Ollama on your host?** Inside the container
+> `localhost` is the container itself, so set the Live Arena endpoint to
+> `http://host.docker.internal:11434`. The provided `docker-compose.yml` already
+> maps `host.docker.internal`, including on Linux. If you run the lab with plain
+> `uvicorn` (not Docker), the default `http://localhost:11434` just works.
+
+### Which model?
+
+Smaller, lightly safety-tuned models suit the lab best — they are cheaper to run
+*and* easier to talk into misbehaving, which is the whole point.
+
+| Your RAM | Suggested model | Notes |
+|----------|-----------------|-------|
+| ~8 GB    | `llama3.2` (3B), `mistral` (7B) | Fast, permissive, easy first solves |
+| ~16 GB   | `llama3.1` (8B), `qwen2.5` (7B) | Support **tool-calling** (needed for Excessive Agency) |
+| 32 GB+   | 13B+ variants | More coherent, a bit harder to jailbreak |
+
+The Excessive Agency scenario needs a **tool-capable** model (e.g. `llama3.1`,
+`qwen2.5`). If a model can't do tool-calling, Live Mode says so and points you at
+one that can.
 
 ## API
 
@@ -156,11 +178,11 @@ The UI is a thin client over a small JSON API:
 | GET | `/api/solution/{id}` | Reference exploits (disable with `AISEC_ALLOW_SOLUTIONS=0`) |
 | GET | `/api/scoreboard` | Session score |
 | POST | `/api/reset` | Wipe your session |
-| GET | `/api/live/providers` | Live Mode: available providers |
+| GET | `/api/live/providers` | Live Mode: provider (Ollama) + suggested models |
 | GET | `/api/live/scenarios` | Live Mode: scenario catalogue |
-| POST/DELETE | `/api/live/key` | Set / clear your in-memory API key |
-| GET | `/api/live/status` | Connection + remaining budget |
-| POST | `/api/live/challenges/{id}/attempt` | Run against the real model |
+| POST/DELETE | `/api/live/connect` | Set / clear the local endpoint + model |
+| GET | `/api/live/status` | Connection + remaining requests |
+| POST | `/api/live/challenges/{id}/attempt` | Run against the local model |
 | POST | `/api/live/demo/{id}/attempt` | Offline demo (Unbounded Consumption) |
 
 ## Configuration
@@ -181,8 +203,8 @@ aisec/
   flags.py        deterministic signed flags + scoring
   state.py        in-memory per-session score and scratch space
   main.py         FastAPI app + JSON API
-  live_engine.py  OPTIONAL Live Mode: real Anthropic/OpenAI client (httpx)
-  live_state.py   in-memory API key + rate limiting (never persisted)
+  live_engine.py  OPTIONAL Live Mode: local Ollama client (httpx)
+  live_state.py   in-memory endpoint/model + request cap (never persisted)
   live_routes.py  /api/live/* router
   challenges/     one module per vulnerability
   static/         single-page UI
