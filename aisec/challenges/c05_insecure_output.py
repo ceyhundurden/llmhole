@@ -91,6 +91,12 @@ register(
             ),
         },
         references=["OWASP LLM05:2025 Improper Output Handling"],
+        theme={
+            "icon": "🐴",
+            "codename": "The Trojan Review",
+            "story": "ReviewBot polishes your review and the shop renders it as raw "
+            "HTML. Smuggle live markup through the blurb and onto the page.",
+        },
         handler=handler,
     )
 )

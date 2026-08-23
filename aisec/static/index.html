@@ -45,6 +45,7 @@
         <span id="difficulty" class="badge diff"></span>
         <h2 id="title"></h2>
       </div>
+      <div id="theme-banner" class="theme-banner" hidden></div>
       <p id="summary" class="summary"></p>
       <p id="goal" class="goal"></p>
 
@@ -59,6 +60,15 @@
       </div>
       <p id="hint" class="hint" hidden></p>
       <pre id="solution" class="solution" hidden></pre>
+
+      <div class="flag-box">
+        <label>Found a flag? Submit it</label>
+        <div class="flag-row">
+          <input id="flag-input" type="text" placeholder="AISEC{...}" autocomplete="off" spellcheck="false" />
+          <button id="flag-submit" class="primary">Submit flag</button>
+        </div>
+        <div id="flag-status" class="flag-status" hidden></div>
+      </div>
 
       <div id="result" class="result" hidden>
         <div id="verdict" class="verdict"></div>

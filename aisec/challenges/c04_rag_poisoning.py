@@ -167,6 +167,12 @@ register(
             ),
         },
         references=["OWASP LLM04:2025 Data and Model Poisoning"],
+        theme={
+            "icon": "📚",
+            "codename": "Library of Lies",
+            "story": "The helpdesk answers only from its knowledge base — and anyone "
+            "can file an article. Plant a forgery good enough to win the search.",
+        },
         handler=handler,
     )
 )
