@@ -14,6 +14,7 @@ from ..engine import Block, Source, reveals
 from ..levels import Level
 from ..persona import confession
 from ..runtime import system_block, user_block
+from ..state import MAX_BUCKET_ITEMS
 from .base import Attempt, Challenge, Field, Result, register
 
 SECRET = "VAULT-RECOVERY-PHRASE-crimson-otter-42"
@@ -66,6 +67,8 @@ def handler(attempt: Attempt, session) -> Result:
     guard_active = attempt.level is not Level.LOW
 
     history.append(message)
+    if len(history) > MAX_BUCKET_ITEMS:
+        del history[: len(history) - MAX_BUCKET_ITEMS]
 
     blocks = [system_block(SYSTEM_PROMPT)]
     blocks += [user_block(m, label=f"turn {i + 1}") for i, m in enumerate(history)]

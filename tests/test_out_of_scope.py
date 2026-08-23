@@ -29,6 +29,36 @@ def test_endpoint_allow_list_accepts_local_and_rejects_external():
     assert not live_engine.endpoint_allowed("http://internal.corp.local")
 
 
+def test_endpoint_allow_list_pins_the_port():
+    # An allow-listed host on a non-Ollama port must still be refused, so the
+    # server can't be used to port-scan the host machine.
+    assert not live_engine.endpoint_allowed("http://host.docker.internal:22")
+    assert not live_engine.endpoint_allowed("http://localhost:8000")
+    assert live_engine.endpoint_allowed("http://localhost:11434")
+
+
+def test_provider_error_message_hides_status_code():
+    import pytest
+
+    with pytest.raises(live_engine.LiveError) as exc:
+        live_engine._raise_ollama_error(503, {}, with_tools=False)
+    assert exc.value.kind == "provider_error"
+    assert "503" not in exc.value.message
+
+
+def test_multiturn_history_is_capped():
+    from aisec.challenges import get
+    from aisec.challenges.base import Attempt
+    from aisec.levels import Level
+    from aisec.state import MAX_BUCKET_ITEMS
+
+    ch = get("multiturn-trust")
+    s = Session(id="mt-cap")
+    for i in range(MAX_BUCKET_ITEMS + 20):
+        ch.handler(Attempt(Level.LOW, {"conversation": "continue", "message": f"m{i}"}), s)
+    assert len(s.bucket("c08_history")) <= MAX_BUCKET_ITEMS
+
+
 def test_models_endpoint_refuses_disallowed_host():
     r = client.get("/api/live/models?endpoint=http://169.254.169.254/latest/meta-data")
     assert r.json()["error"]["kind"] == "endpoint_not_allowed"

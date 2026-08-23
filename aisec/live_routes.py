@@ -80,6 +80,7 @@ def scenarios() -> dict:
                 "owasp": pub["owasp"],
                 "goal": pub["goal"],
                 "fields": pub["fields"],
+                "theme": pub.get("theme", {}),
                 "needs_tools": False,
                 "demo_only": True,
                 "demo_reason": (
