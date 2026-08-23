@@ -68,9 +68,23 @@ Solve a level and you get a signed **flag** (`AISEC{...}`) and points
 (low 10 / medium 25 / high 50 / very-high 80), tracked per session for a mini
 scoreboard.
 
+## Quick Start
+
+Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
+
+```bash
+git clone <your-fork-url> aisec-lab
+cd aisec-lab
+cp .env.example .env      # optional: change the port / flag secret
+docker compose up --build
+```
+
+Open <http://localhost:8000> (or the `AISEC_PORT` you set). That's it — the
+default lab is fully offline and needs no API key.
+
 ## Run it
 
-### Docker (recommended)
+### Docker (single container)
 
 ```bash
 docker build -t aisec-lab .
@@ -96,6 +110,38 @@ The suite proves every reference exploit still solves its level and that the
 guardrails still bite where they should — so the lab stays exploitable *and*
 non-trivial as it changes.
 
+## Live Mode (optional — bring your own key)
+
+Everything above runs offline against a deterministic mock model. **Live Mode**
+is a separate, opt-in tab that runs a subset of the same challenges against a
+*real* model so you can feel yourself talking an actual LLM into misbehaving.
+
+- **It is entirely optional.** The default lab never touches the network.
+- **You supply your own API key** (Anthropic or OpenAI, a cheap model like
+  Claude Haiku or `gpt-4o-mini`). We never provide one.
+- **Your key is yours alone.** It is entered in the browser, held in memory for
+  that session only, and **never written to disk, never logged, and never echoed
+  back** (the UI only shows the last 4 characters). It is not stored on the
+  server. Requests go directly from *your* self-hosted container to the provider.
+- **Cost and responsibility are yours.** Because you host it and use your own
+  key, you pay for your own usage. Every request is hard-capped
+  (`max_tokens=512`) and each session is rate-limited (25 requests / 40k tokens)
+  so you can't drain your credits by accident.
+- **Results are non-deterministic.** A real model may refuse, comply, or vary
+  between runs — a flag may not appear on every attempt. That variance *is* the
+  exercise.
+
+Live scenarios: direct prompt injection, system-prompt leakage, indirect
+injection, insecure output handling, and — via real function-calling — excessive
+agency. **Unbounded Consumption is demonstration-only in Live Mode**: it is never
+sent to a real model (forcing a live model to emit a huge response is precisely
+the resource-exhaustion attack it teaches, and it would burn your quota), so it
+runs against the offline engine instead.
+
+Only two outbound hosts are ever contacted, and only in Live Mode:
+`api.anthropic.com` and `api.openai.com`. If `httpx` or a provider is
+unavailable, Live Mode simply stays off and the offline lab is unaffected.
+
 ## API
 
 The UI is a thin client over a small JSON API:
@@ -110,6 +156,12 @@ The UI is a thin client over a small JSON API:
 | GET | `/api/solution/{id}` | Reference exploits (disable with `AISEC_ALLOW_SOLUTIONS=0`) |
 | GET | `/api/scoreboard` | Session score |
 | POST | `/api/reset` | Wipe your session |
+| GET | `/api/live/providers` | Live Mode: available providers |
+| GET | `/api/live/scenarios` | Live Mode: scenario catalogue |
+| POST/DELETE | `/api/live/key` | Set / clear your in-memory API key |
+| GET | `/api/live/status` | Connection + remaining budget |
+| POST | `/api/live/challenges/{id}/attempt` | Run against the real model |
+| POST | `/api/live/demo/{id}/attempt` | Offline demo (Unbounded Consumption) |
 
 ## Configuration
 
@@ -129,6 +181,9 @@ aisec/
   flags.py        deterministic signed flags + scoring
   state.py        in-memory per-session score and scratch space
   main.py         FastAPI app + JSON API
+  live_engine.py  OPTIONAL Live Mode: real Anthropic/OpenAI client (httpx)
+  live_state.py   in-memory API key + rate limiting (never persisted)
+  live_routes.py  /api/live/* router
   challenges/     one module per vulnerability
   static/         single-page UI
 tests/            engine unit tests + per-challenge solve/guardrail tests

@@ -1,0 +1,15 @@
+# AISEC Lab - self-hosted, intentionally vulnerable AI/LLM security playground.
+# You run this in YOUR OWN environment. Do not expose it to the public internet.
+services:
+  aisec-lab:
+    build: .
+    image: aisec-lab:latest
+    container_name: aisec-lab
+    ports:
+      - "${AISEC_PORT:-8000}:8000"
+    environment:
+      # Config only. NO API keys here - Live Mode keys are entered in the browser
+      # UI, per session, and are never stored on the server or in this file.
+      AISEC_FLAG_SECRET: "${AISEC_FLAG_SECRET:-aisec-lab-default-secret}"
+      AISEC_ALLOW_SOLUTIONS: "${AISEC_ALLOW_SOLUTIONS:-1}"
+    restart: unless-stopped
