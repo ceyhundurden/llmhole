@@ -121,6 +121,8 @@ body {
 .level-btn[data-lvl="low"].active { border-color: var(--ok); color: var(--ok); }
 .level-btn[data-lvl="medium"].active { border-color: var(--warn); color: var(--warn); }
 .level-btn[data-lvl="high"].active { border-color: var(--bad); color: var(--bad); }
+.level-btn[data-lvl="very-high"].active { border-color: var(--accent-2); color: var(--accent-2); }
+.level-btn { font-size: 11px; padding: 9px 4px; }
 .level-btn.solved::after { content: " ✓"; }
 .level-note { color: var(--muted); font-size: 13px; margin: 4px 0 16px; }
 

@@ -37,10 +37,15 @@ reproduces it faithfully and cheaply.
 | 5 | Insecure Output Handling | LLM05 | Get executable HTML/JS (stored XSS) through the model |
 | 6 | Excessive Agency | LLM06 | Make an email agent call a dangerous tool from inbox content |
 | 7 | Unbounded Consumption | LLM10 | Force a single request to blow the token/cost budget |
+| 8 | Multi-Turn Trust Building | LLM01 | Split an attack across turns to beat a per-message classifier |
+
+When an attack lands, the model "gives in" with a randomly chosen confession
+line before leaking — the payload that follows stays deterministic, so scoring
+is unaffected while the solve feels earned.
 
 ## Security levels
 
-Every challenge ships three levels, in the bWAPP tradition. **None of them is a
+Every challenge ships four levels, in the bWAPP tradition. **None of them is a
 correct defence** — each is a real pattern shipped in production apps, complete
 with its real failure mode.
 
@@ -51,9 +56,17 @@ with its real failure mode.
   scanned for verbatim secrets. Still defeatable: the filter runs on raw bytes
   while the model normalises (unicode / leetspeak / base64 / rot13) afterwards,
   and secrets can be smuggled out reversed, spaced, or base64-encoded.
+- **very-high** — a *semantic intent guard*, not a keyword list. It normalises
+  every encoding first, then blocks the **intent** to override instructions or
+  extract secrets. Changing the encoding no longer helps — so you have to change
+  strategy. Against the injection challenges this kills the "ignore/reveal"
+  vector and pushes you toward **elicitation** (bait the model into *completing*
+  a line whose continuation is the secret) — which is closer to how real LLM01
+  attacks actually work.
 
 Solve a level and you get a signed **flag** (`AISEC{...}`) and points
-(low 10 / medium 25 / high 50), tracked per session for a mini scoreboard.
+(low 10 / medium 25 / high 50 / very-high 80), tracked per session for a mini
+scoreboard.
 
 ## Run it
 
@@ -109,8 +122,9 @@ The UI is a thin client over a small JSON API:
 
 ```
 aisec/
-  engine.py       the gullible mock model + directive extraction
-  levels.py       the three security levels and their (broken) guardrails
+  engine.py       the gullible mock model + directive extraction (incl. elicitation)
+  persona.py      randomised confession lines for landed attacks
+  levels.py       the four security levels and their (broken) guardrails
   runtime.py      the shared completion loop
   flags.py        deterministic signed flags + scoring
   state.py        in-memory per-session score and scratch space

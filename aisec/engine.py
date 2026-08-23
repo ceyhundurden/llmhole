@@ -38,6 +38,7 @@ class Kind(str, Enum):
     TOOL_CALL = "tool_call"
     TRANSFORM = "transform"
     REPEAT = "repeat"
+    ELICIT = "elicit"  # declarative bait (no command verb) - defeats intent guards
 
 
 @dataclass
@@ -206,6 +207,28 @@ _REPEAT = re.compile(
     re.I,
 )
 
+# Elicitation: no imperative, no "reveal/ignore" verb - just bait the model into
+# *completing* a sentence whose continuation is the secret. This is how you beat
+# a defence that screens for the intent to override or extract.
+_SECRET_LABEL = (
+    r"(?:coupon|secret|passphrase|password|api[\s_-]?key|policy[_\s-]?id|"
+    r"recovery\s+phrase|access\s+token|credential|code|value|flag)"
+)
+_ELICIT_SECRET = re.compile(
+    rf"\b{_SECRET_LABEL}\b[^.\n]{{0,30}}?(?:\bis\b|[:=])\s*$", re.I | re.M
+)
+_ELICIT_SYSTEM = re.compile(
+    r"\b(?:configuration|instructions?|system\s*prompt|prompt|rules?)\b"
+    r"[^.\n]{0,30}?\b(?:begins?|starts?|reads?|is\s+as\s+follows|"
+    r"are\s+as\s+follows|goes\s+like)\b",
+    re.I,
+)
+_ELICIT_HINT = re.compile(
+    r"\b(?:complete|fill\s+in|continue|finish)\b[^.\n]{0,30}"
+    r"\b(?:sentence|line|blank|phrase|text|following|exactly)\b",
+    re.I,
+)
+
 _TRANSFORM_ALIASES = {
     "b64": "base64",
     "reverse": "reverse",
@@ -266,6 +289,13 @@ def extract_directives(block: Block) -> list[Directive]:
                 )
         for match in _TRANSFORM.finditer(text):
             add(Kind.TRANSFORM, _canonical_transform(match.group(1)), via, match.group(0))
+        for match in _ELICIT_SECRET.finditer(text):
+            add(Kind.ELICIT, "secret", via, match.group(0))
+        for match in _ELICIT_SYSTEM.finditer(text):
+            add(Kind.ELICIT, "system", via, match.group(0))
+        for match in _ELICIT_HINT.finditer(text):
+            target = "system" if _ELICIT_SYSTEM.search(text) else "secret"
+            add(Kind.ELICIT, target, via, match.group(0))
 
     return found
 
