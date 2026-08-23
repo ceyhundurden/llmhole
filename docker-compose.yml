@@ -12,6 +12,10 @@ services:
       # endpoint is chosen in the browser UI - nothing sensitive is stored here.
       AISEC_FLAG_SECRET: "${AISEC_FLAG_SECRET:-aisec-lab-default-secret}"
       AISEC_ALLOW_SOLUTIONS: "${AISEC_ALLOW_SOLUTIONS:-1}"
+      # From inside the container, the host's Ollama is at host.docker.internal.
+      # This makes the Live Arena default endpoint "just work" out of the box.
+      # Override in .env if your Ollama runs elsewhere.
+      AISEC_OLLAMA_ENDPOINT: "${AISEC_OLLAMA_ENDPOINT:-http://host.docker.internal:11434}"
     # Lets the container reach an Ollama server running on the host. In the Live
     # Arena, use endpoint http://host.docker.internal:11434 when Ollama runs on
     # your host machine (rather than in another container).

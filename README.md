@@ -143,11 +143,15 @@ resource-exhaustion attack it teaches), so it runs against the offline engine.
 If Ollama isn't running or the model isn't pulled, Live Mode returns a clear,
 actionable error and the offline lab is completely unaffected.
 
-> **Running the lab in Docker with Ollama on your host?** Inside the container
-> `localhost` is the container itself, so set the Live Arena endpoint to
-> `http://host.docker.internal:11434`. The provided `docker-compose.yml` already
-> maps `host.docker.internal`, including on Linux. If you run the lab with plain
-> `uvicorn` (not Docker), the default `http://localhost:11434` just works.
+The endpoint is **pre-filled for you**: `docker compose up` ships
+`AISEC_OLLAMA_ENDPOINT=http://host.docker.internal:11434` (the host's Ollama as
+seen from inside the container, mapped for Linux too), and a bare `uvicorn` run
+defaults to `http://localhost:11434`. Override it with `AISEC_OLLAMA_ENDPOINT`
+in `.env` if your Ollama lives elsewhere.
+
+Click **↻ Installed** next to the model field to list the models actually pulled
+in your Ollama and pick one — or type any model name you've pulled
+(`ollama pull mistral`, `ollama pull qwen2.5`, …).
 
 ### Which model?
 
