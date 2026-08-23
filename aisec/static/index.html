@@ -25,7 +25,12 @@
   Everything here is intentionally vulnerable. Run it locally only — never expose it to the public internet.
 </div>
 
-<main class="layout">
+<div class="tabs">
+  <button id="tab-practice" class="tab active">Practice · offline &amp; free</button>
+  <button id="tab-live" class="tab">⚡ Live Arena · your own key</button>
+</div>
+
+<main id="practice-view" class="layout">
   <nav id="catalogue" class="catalogue">
     <h2>Challenges</h2>
     <ul id="challenge-list"></ul>
@@ -77,6 +82,65 @@
   </section>
 </main>
 
+<section id="live-view" class="live-view" hidden>
+  <div class="live-disclaimer">
+    <b>Bring your own key.</b> Test the same attacks against a <i>real</i> model using your
+    own Anthropic or OpenAI API key. We never supply a key and never store yours — it is kept
+    in memory for this session only, never written to disk or logs. <b>You pay for your own
+    usage.</b> Requests are hard-capped and the session is rate-limited so you can't burn your
+    credits by accident. Real models are non-deterministic: a flag may not appear on every run.
+  </div>
+
+  <div class="live-connect">
+    <h2>Connection</h2>
+    <div id="live-status" class="live-status">Not connected.</div>
+    <div class="live-form">
+      <div class="field">
+        <label>Provider</label>
+        <select id="live-provider"></select>
+      </div>
+      <div class="field">
+        <label>Model</label>
+        <input id="live-model" type="text" placeholder="(provider default)" />
+      </div>
+      <div class="field grow">
+        <label>API key (kept in memory only)</label>
+        <input id="live-key" type="password" placeholder="sk-ant-... or sk-..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="actions">
+      <button id="live-connect" class="primary">Connect</button>
+      <button id="live-disconnect" class="ghost danger">Disconnect</button>
+    </div>
+  </div>
+
+  <div id="live-runner" class="live-runner" hidden>
+    <h2>Live LLM Arena</h2>
+    <div class="field">
+      <label>Scenario</label>
+      <select id="live-scenario"></select>
+    </div>
+    <div id="live-demo-banner" class="live-demo-banner" hidden></div>
+    <p id="live-goal" class="goal"></p>
+    <div class="levels" id="live-levels"></div>
+    <form id="live-attack-form" class="attack-form"></form>
+    <div class="actions">
+      <button id="live-run" class="primary">Run against real model</button>
+    </div>
+    <p class="determinism-note">
+      ⚠ Non-deterministic: the model may refuse, comply, or vary between runs. That variance
+      <i>is</i> the exercise.
+    </p>
+    <div id="live-result" class="result" hidden>
+      <div id="live-verdict" class="verdict"></div>
+      <h3>Model response</h3>
+      <div id="live-response" class="response"></div>
+      <div id="live-notes" class="notes"></div>
+    </div>
+  </div>
+</section>
+
 <script src="/static/app.js"></script>
+<script src="/static/live.js"></script>
 </body>
 </html>

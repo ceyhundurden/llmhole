@@ -41,6 +41,16 @@ _STATIC = Path(__file__).parent / "static"
 if _STATIC.exists():
     app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
+# Optional Live Mode. If it cannot import (e.g. httpx missing), the offline lab
+# still runs - Live Mode just stays unavailable.
+try:
+    from .live_routes import router as live_router
+
+    app.include_router(live_router)
+    _LIVE_AVAILABLE = True
+except Exception:  # pragma: no cover - defensive: never break offline mode
+    _LIVE_AVAILABLE = False
+
 
 class AttemptIn(BaseModel):
     level: str = "low"
@@ -64,6 +74,7 @@ def health() -> dict:
         "status": "ok",
         "version": __version__,
         "challenges": len(all_challenges()),
+        "live_mode": _LIVE_AVAILABLE,
     }
 
 
