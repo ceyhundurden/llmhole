@@ -84,11 +84,12 @@
 
 <section id="live-view" class="live-view" hidden>
   <div class="live-disclaimer">
-    <b>Bring your own key.</b> Test the same attacks against a <i>real</i> model using your
-    own Anthropic or OpenAI API key. We never supply a key and never store yours — it is kept
-    in memory for this session only, never written to disk or logs. <b>You pay for your own
-    usage.</b> Requests are hard-capped and the session is rate-limited so you can't burn your
-    credits by accident. Real models are non-deterministic: a flag may not appear on every run.
+    <b>Fully local — no internet, no key.</b> Test the same attacks against a <i>real</i> model
+    running on your own machine via <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>.
+    The model runs on your hardware and requests never leave the box. Pull a model first
+    (<code>ollama pull llama3</code>) and make sure <code>ollama serve</code> is running.
+    Results are non-deterministic: a flag may not appear on every run — that variance <i>is</i>
+    the exercise.
   </div>
 
   <div class="live-connect">
@@ -99,13 +100,15 @@
         <label>Provider</label>
         <select id="live-provider"></select>
       </div>
-      <div class="field">
-        <label>Model</label>
-        <input id="live-model" type="text" placeholder="(provider default)" />
+      <div class="field grow">
+        <label>Endpoint</label>
+        <input id="live-endpoint" type="text" placeholder="http://localhost:11434" />
       </div>
       <div class="field grow">
-        <label>API key (kept in memory only)</label>
-        <input id="live-key" type="password" placeholder="sk-ant-... or sk-..." autocomplete="off" />
+        <label>Model (pulled in Ollama)</label>
+        <input id="live-model" type="text" list="live-model-list" placeholder="llama3.2" />
+        <datalist id="live-model-list"></datalist>
+        <div class="fhelp">The model runs on your machine. Pre-pull it: <code>ollama pull &lt;model&gt;</code>.</div>
       </div>
     </div>
     <div class="actions">

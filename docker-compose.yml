@@ -8,8 +8,13 @@ services:
     ports:
       - "${AISEC_PORT:-8000}:8000"
     environment:
-      # Config only. NO API keys here - Live Mode keys are entered in the browser
-      # UI, per session, and are never stored on the server or in this file.
+      # Config only. Live Mode uses a LOCAL Ollama server (no key, no cost) whose
+      # endpoint is chosen in the browser UI - nothing sensitive is stored here.
       AISEC_FLAG_SECRET: "${AISEC_FLAG_SECRET:-aisec-lab-default-secret}"
       AISEC_ALLOW_SOLUTIONS: "${AISEC_ALLOW_SOLUTIONS:-1}"
+    # Lets the container reach an Ollama server running on the host. In the Live
+    # Arena, use endpoint http://host.docker.internal:11434 when Ollama runs on
+    # your host machine (rather than in another container).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped

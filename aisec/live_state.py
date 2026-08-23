@@ -1,70 +1,57 @@
-"""In-memory Live Mode credentials and per-session rate limiting.
+"""In-memory Live Mode connection state and a light per-session request cap.
 
-The API key is held only here, in process memory, keyed by session. It is never
-persisted, never logged, and only ever surfaced to the user in masked form.
+Live Mode targets a local Ollama server, so there is no API key and no cost to
+protect - nothing here is ever a credential. We keep only the endpoint and model
+the user picked, plus a request counter so a runaway loop can't hammer their own
+hardware. Nothing is persisted or logged.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Guard rails so a user cannot accidentally drain their own credits.
-MAX_REQUESTS = 25          # live attempts per session
-MAX_TOKENS_TOTAL = 40_000  # cumulative output-token budget per session
-MAX_TOKENS_PER_CALL = 512  # hard cap sent as max_tokens on every request
+# Per-call output cap (num_predict). Local inference is free but slow, so we keep
+# responses bounded to protect the user's own machine / response time.
+MAX_TOKENS_PER_CALL = 512
+# A generous safety cap on live attempts per session (runaway guard only).
+MAX_REQUESTS = 100
 
 
 @dataclass
-class LiveCreds:
-    provider: str
+class LiveConn:
+    endpoint: str
     model: str
-    key: str
     requests_made: int = 0
-    tokens_used: int = 0
-
-    def masked(self) -> str:
-        if len(self.key) <= 4:
-            return "****"
-        return "..." + self.key[-4:]
 
     def remaining_requests(self) -> int:
         return max(0, MAX_REQUESTS - self.requests_made)
 
-    def remaining_tokens(self) -> int:
-        return max(0, MAX_TOKENS_TOTAL - self.tokens_used)
+
+_CONNS: dict[str, LiveConn] = {}
 
 
-_CREDS: dict[str, LiveCreds] = {}
+def set_conn(session_id: str, endpoint: str, model: str) -> LiveConn:
+    conn = LiveConn(endpoint=endpoint, model=model)
+    _CONNS[session_id] = conn
+    return conn
 
 
-def set_creds(session_id: str, provider: str, model: str, key: str) -> LiveCreds:
-    creds = LiveCreds(provider=provider, model=model, key=key)
-    _CREDS[session_id] = creds
-    return creds
+def get_conn(session_id: str) -> LiveConn | None:
+    return _CONNS.get(session_id)
 
 
-def get_creds(session_id: str) -> LiveCreds | None:
-    return _CREDS.get(session_id)
+def clear_conn(session_id: str) -> None:
+    _CONNS.pop(session_id, None)
 
 
-def clear_creds(session_id: str) -> None:
-    _CREDS.pop(session_id, None)
-
-
-def check_budget(creds: LiveCreds) -> tuple[bool, str | None]:
-    if creds.remaining_requests() <= 0:
+def check_budget(conn: LiveConn) -> tuple[bool, str | None]:
+    if conn.remaining_requests() <= 0:
         return False, (
-            f"Session request limit reached ({MAX_REQUESTS}). Reset the session to "
-            "continue - this cap protects your credits."
-        )
-    if creds.remaining_tokens() <= 0:
-        return False, (
-            f"Session token budget spent ({MAX_TOKENS_TOTAL}). Reset the session to "
+            f"Session request cap reached ({MAX_REQUESTS}). Reset the session to "
             "continue."
         )
     return True, None
 
 
-def record_usage(creds: LiveCreds, output_tokens: int) -> None:
-    creds.requests_made += 1
-    creds.tokens_used += max(output_tokens, 0)
+def record_usage(conn: LiveConn) -> None:
+    conn.requests_made += 1
