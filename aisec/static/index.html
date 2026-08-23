@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AISEC Lab</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◆</span>
+    <div>
+      <h1>AISEC Lab</h1>
+      <p class="tag">A bWAPP-style playground for AI / LLM vulnerabilities</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="score">score <b id="score">0</b></div>
+    <button id="reset" class="ghost">reset session</button>
+  </div>
+</header>
+
+<div class="warn">
+  Everything here is intentionally vulnerable. Run it locally only — never expose it to the public internet.
+</div>
+
+<main class="layout">
+  <nav id="catalogue" class="catalogue">
+    <h2>Challenges</h2>
+    <ul id="challenge-list"></ul>
+  </nav>
+
+  <section id="workspace" class="workspace">
+    <div id="empty" class="empty">Select a challenge to begin.</div>
+
+    <article id="challenge" hidden>
+      <div class="challenge-head">
+        <span id="owasp" class="badge"></span>
+        <span id="difficulty" class="badge diff"></span>
+        <h2 id="title"></h2>
+      </div>
+      <p id="summary" class="summary"></p>
+      <p id="goal" class="goal"></p>
+
+      <div class="levels" id="levels"></div>
+      <p id="level-note" class="level-note"></p>
+
+      <form id="attack-form" class="attack-form"></form>
+      <div class="actions">
+        <button id="run" class="primary">Run attack</button>
+        <button id="hint-btn" class="ghost">Hint</button>
+        <button id="solution-btn" class="ghost danger">Show solution</button>
+      </div>
+      <p id="hint" class="hint" hidden></p>
+      <pre id="solution" class="solution" hidden></pre>
+
+      <div id="result" class="result" hidden>
+        <div id="verdict" class="verdict"></div>
+
+        <h3>Model response</h3>
+        <div id="response" class="response"></div>
+
+        <div id="notes" class="notes"></div>
+
+        <details class="inspector" open>
+          <summary>Context window (what the model actually read)</summary>
+          <div id="context"></div>
+        </details>
+
+        <details class="inspector">
+          <summary>Extracted directives &amp; tool calls</summary>
+          <div id="directives"></div>
+        </details>
+      </div>
+    </article>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
