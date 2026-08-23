@@ -53,6 +53,9 @@ ALLOWED_LLM_HOSTS = {
     ).split(",")
     if h.strip()
 }
+ALLOWED_LLM_PORTS = {
+    int(p) for p in os.getenv("AISEC_ALLOWED_LLM_PORTS", "11434").split(",") if p.strip()
+}
 
 # Shown in the UI to help users pick a model. Small, lightly-safety-tuned models
 # suit the lab best (easier to talk into misbehaving). Tool-capable ones are
@@ -144,14 +147,15 @@ class LiveScenario:
     tools: list | None = None  # function-calling specs, if this scenario uses tools
 
     def public(self) -> dict:
-        challenge = _CHALLENGE_META.get(self.id, {})
+        meta = _CHALLENGE_META.get(self.id, {})
         return {
             "id": self.id,
             "title": self.title,
             "owasp": self.owasp,
             "goal": self.goal,
             "needs_tools": bool(self.tools),
-            "fields": challenge.get("fields", []),
+            "theme": meta.get("theme", {}),
+            "fields": meta.get("fields", []),
         }
 
 
@@ -277,7 +281,8 @@ def _load_field_meta() -> None:
     for sid in SCENARIOS:
         challenge = _get(sid)
         if challenge is not None:
-            _CHALLENGE_META[sid] = {"fields": challenge.public()["fields"]}
+            pub = challenge.public()
+            _CHALLENGE_META[sid] = {"fields": pub["fields"], "theme": pub.get("theme", {})}
 
 
 _load_field_meta()
@@ -305,7 +310,12 @@ def endpoint_allowed(endpoint: str) -> bool:
     except ValueError:
         return False
     host = (parsed.hostname or "").lower().strip("[]")
-    return parsed.scheme in ("http", "https") and host in ALLOWED_LLM_HOSTS
+    port = parsed.port or 11434
+    return (
+        parsed.scheme in ("http", "https")
+        and host in ALLOWED_LLM_HOSTS
+        and port in ALLOWED_LLM_PORTS
+    )
 
 
 def require_allowed(endpoint: str) -> None:
@@ -415,7 +425,7 @@ def _raise_ollama_error(status: int, body: dict, with_tools: bool) -> None:
             "This model does not support tool-calling. Try a tool-capable model "
             "such as llama3.1 or qwen2.5.",
         )
-    raise LiveError("provider_error", err or f"Ollama returned HTTP {status}.")
+    raise LiveError("provider_error", "The model server returned an error.")
 
 
 # --- the live attempt ------------------------------------------------------

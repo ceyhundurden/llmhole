@@ -70,5 +70,6 @@ jobs:
         with:
           image-ref: aisec-lab:ci
           format: table
-          exit-code: "0"  # advisory; flip to 1 to fail on HIGH/CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
           severity: HIGH,CRITICAL

@@ -186,9 +186,26 @@
     return ((live.scenario && live.scenario.fields) || []).filter((f) => f !== p);
   }
 
+  function renderTheme(theme) {
+    const box = $("#live-theme-banner");
+    if (!theme || !theme.codename) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = "";
+    box.appendChild(el("span", "theme-icon", theme.icon || "🎯"));
+    const body = el("div", "theme-body");
+    body.appendChild(el("span", "theme-codename", theme.codename));
+    body.appendChild(el("span", "theme-story", theme.story || ""));
+    box.appendChild(body);
+  }
+
   function renderScenario() {
     const s = live.scenario;
     if (!s) return;
+
+    renderTheme(s.theme);
 
     const banner = $("#live-demo-banner");
     if (s.demo_only) {
