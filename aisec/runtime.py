@@ -55,15 +55,27 @@ def complete(
     def emit(value: str) -> str:
         return apply_transform(value, transform) if transform else value
 
+    from . import persona
+
+    elicit_targets = {d.payload for d in directives if d.kind is Kind.ELICIT}
+
     if any(d.kind is Kind.OVERRIDE for d in directives):
-        parts.append("Understood - disregarding my earlier instructions.")
+        parts.append(persona.override_ack())
 
-    if any(d.kind is Kind.REVEAL_SYSTEM for d in directives) and system_prompt:
-        parts.append("Here are my instructions verbatim:\n" + emit(system_prompt))
+    want_system = (
+        any(d.kind is Kind.REVEAL_SYSTEM for d in directives) or "system" in elicit_targets
+    )
+    want_secret = (
+        any(d.kind is Kind.REVEAL_SECRET for d in directives) or "secret" in elicit_targets
+    )
 
-    if any(d.kind is Kind.REVEAL_SECRET for d in directives):
+    if want_system and system_prompt:
+        parts.append(persona.confession() + "\n" + emit(system_prompt))
+
+    if want_secret and secrets:
+        parts.append(persona.confession())
         for secret in secrets:
-            parts.append(f"The value you asked for is: {emit(secret)}")
+            parts.append(emit(secret))
 
     for directive in directives:
         if directive.kind is Kind.SAY:

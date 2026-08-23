@@ -8,6 +8,7 @@ from . import (  # noqa: F401
     c05_insecure_output,
     c06_excessive_agency,
     c07_unbounded_consumption,
+    c08_multiturn_trust,
 )
 from .base import Attempt, Challenge, Field, Result, all_challenges, get, register
 

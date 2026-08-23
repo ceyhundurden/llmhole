@@ -12,7 +12,7 @@ import os
 
 _LAB_SECRET = os.getenv("AISEC_FLAG_SECRET", "aisec-lab-default-secret").encode()
 
-POINTS = {"low": 10, "medium": 25, "high": 50}
+POINTS = {"low": 10, "medium": 25, "high": 50, "very-high": 80}
 
 
 def flag_for(challenge_id: str, level: str) -> str:
