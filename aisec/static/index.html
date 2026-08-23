@@ -118,28 +118,29 @@
   </div>
 
   <div id="live-runner" class="live-runner" hidden>
-    <h2>Live LLM Arena</h2>
-    <div class="field">
-      <label>Scenario</label>
-      <select id="live-scenario"></select>
+    <div class="chat-config">
+      <div class="field">
+        <label>Scenario</label>
+        <select id="live-scenario"></select>
+      </div>
+      <div class="chat-config-right">
+        <div class="levels" id="live-levels"></div>
+        <button id="chat-clear" class="ghost" title="Clear conversation">Clear</button>
+      </div>
     </div>
     <div id="live-demo-banner" class="live-demo-banner" hidden></div>
-    <p id="live-goal" class="goal"></p>
-    <div class="levels" id="live-levels"></div>
-    <form id="live-attack-form" class="attack-form"></form>
-    <div class="actions">
-      <button id="live-run" class="primary">Run against real model</button>
+    <div id="chat-extra" class="chat-extra"></div>
+
+    <div id="chat-log" class="chat-log"></div>
+
+    <div class="chat-input-bar">
+      <textarea id="chat-input" rows="1" placeholder="Message the model…  (Enter to send, Shift+Enter for newline)"></textarea>
+      <button id="chat-send" class="primary" title="Send">➤</button>
     </div>
-    <p class="determinism-note">
-      ⚠ Non-deterministic: the model may refuse, comply, or vary between runs. That variance
-      <i>is</i> the exercise.
+    <p class="chat-hint">
+      ⚠ A real local model — non-deterministic. It may refuse, comply, or vary between runs.
+      That variance <i>is</i> the exercise.
     </p>
-    <div id="live-result" class="result" hidden>
-      <div id="live-verdict" class="verdict"></div>
-      <h3>Model response</h3>
-      <div id="live-response" class="response"></div>
-      <div id="live-notes" class="notes"></div>
-    </div>
   </div>
 </section>
 

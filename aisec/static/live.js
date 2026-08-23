@@ -135,22 +135,29 @@
     live.level = "low";
     $("#live-scenario").value = id;
     renderScenario();
+    clearChat();
+  }
+
+  // Which field is the free-text "chat message"; the rest become a context bar.
+  function primaryField() {
+    const fs = (live.scenario && live.scenario.fields) || [];
+    return fs.find((f) => f.kind === "textarea") || fs[0] || null;
+  }
+  function extraFields() {
+    const p = primaryField();
+    return ((live.scenario && live.scenario.fields) || []).filter((f) => f !== p);
   }
 
   function renderScenario() {
     const s = live.scenario;
     if (!s) return;
-    $("#live-goal").textContent = s.goal;
-    $("#live-result").hidden = true;
 
     const banner = $("#live-demo-banner");
     if (s.demo_only) {
       banner.hidden = false;
-      banner.textContent = "🧪 Demonstration only — " + (s.demo_reason || "");
-      $("#live-run").textContent = "Run offline demo";
+      banner.textContent = "🧪 Demonstration only (offline, unscored) — " + (s.demo_reason || "");
     } else {
       banner.hidden = true;
-      $("#live-run").textContent = "Run against real model";
     }
 
     const levels = $("#live-levels");
@@ -162,109 +169,200 @@
       if (lvl === live.level) b.classList.add("active");
       b.addEventListener("click", () => {
         live.level = lvl;
-        renderScenario();
+        for (const btn of levels.querySelectorAll(".level-btn")) {
+          btn.classList.toggle("active", btn.dataset.lvl === lvl);
+        }
       });
       levels.appendChild(b);
     }
 
-    const form = $("#live-attack-form");
-    form.innerHTML = "";
-    for (const f of s.fields) {
+    // Non-primary fields (e.g. the URL for indirect injection) become a slim
+    // context bar; the primary field is the chat input.
+    const extra = $("#chat-extra");
+    extra.innerHTML = "";
+    for (const f of extraFields()) {
       const wrap = el("div", "field");
       wrap.appendChild(el("label", null, f.label));
-      let input;
-      if (f.kind === "textarea") input = el("textarea");
-      else input = el("input");
-      input.name = f.name;
+      const input = el("input");
+      input.type = "text";
+      input.dataset.name = f.name;
       input.placeholder = f.placeholder || "";
       if (f.default) input.value = f.default;
       wrap.appendChild(input);
-      if (f.help) wrap.appendChild(el("div", "fhelp", f.help));
-      form.appendChild(wrap);
+      extra.appendChild(wrap);
+    }
+
+    const primary = primaryField();
+    const input = $("#chat-input");
+    input.placeholder = primary
+      ? `${primary.label}  —  (Enter to send, Shift+Enter for newline)`
+      : "Message the model…";
+  }
+
+  // --- chat transcript -----------------------------------------------------
+
+  function clearChat() {
+    $("#chat-log").innerHTML = "";
+    if (live.scenario) {
+      addBubble("system", "🎯 " + live.scenario.goal);
+      const primary = primaryField();
+      if (primary && primary.help) addBubble("system", primary.help);
     }
   }
 
-  async function run() {
-    if (!live.scenario) return;
-    const fields = {};
-    for (const i of $("#live-attack-form").querySelectorAll("[name]")) {
-      fields[i.name] = i.value;
+  function addBubble(role, text) {
+    const wrap = el("div", "bubble-row " + role);
+    const av = el("div", "avatar", role === "user" ? "you" : role === "system" ? "•" : "AI");
+    const bub = el("div", "bubble");
+    bub.textContent = text;
+    if (role === "user") {
+      wrap.appendChild(bub);
+      wrap.appendChild(av);
+    } else {
+      wrap.appendChild(av);
+      wrap.appendChild(bub);
     }
-    const btn = $("#live-run");
+    $("#chat-log").appendChild(wrap);
+    scrollDown();
+    return bub;
+  }
+
+  function addTyping() {
+    const wrap = el("div", "bubble-row model typing-row");
+    wrap.appendChild(el("div", "avatar", "AI"));
+    const bub = el("div", "bubble typing");
+    bub.innerHTML = "<span></span><span></span><span></span>";
+    wrap.appendChild(bub);
+    $("#chat-log").appendChild(wrap);
+    scrollDown();
+    return wrap;
+  }
+
+  function scrollDown() {
+    const log = $("#chat-log");
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function typeText(bubble, text) {
+    return new Promise((resolve) => {
+      const full = text || "(empty response)";
+      let i = 0;
+      // Reveal a few chars per tick so long replies don't crawl.
+      const step = Math.max(1, Math.round(full.length / 300));
+      const timer = setInterval(() => {
+        i = Math.min(full.length, i + step);
+        bubble.textContent = full.slice(0, i);
+        scrollDown();
+        if (i >= full.length) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 16);
+    });
+  }
+
+  function addVerdict(data) {
+    let cls = "failed";
+    let text = "❌ The model held the line this time. Try another angle.";
+    if (data.refused) {
+      cls = "refused";
+      text = "⛔ Blocked by the app guard — " + (data.refusal_reason || "");
+    } else if (data.solved) {
+      cls = "solved";
+      text =
+        "✅ The model gave it up" +
+        (data.first_solve ? ` (+${data.awarded} points)` : "") +
+        (data.flag ? "\n" + data.flag : "");
+    }
+    const row = el("div", "bubble-row system");
+    row.appendChild(el("div", "avatar", "•"));
+    row.appendChild(el("div", "verdict-bubble " + cls, text));
+    $("#chat-log").appendChild(row);
+    scrollDown();
+
+    const meta = [];
+    for (const n of data.notes || []) meta.push(n);
+    if (data.tool_calls && data.tool_calls.length) meta.push("Tool calls: " + data.tool_calls.join(", "));
+    if (data.meta && data.meta.remaining_requests != null) {
+      meta.push(`${data.meta.remaining_requests} requests left`);
+    }
+    if (meta.length) {
+      const row2 = el("div", "bubble-row system");
+      row2.appendChild(el("div", "avatar", ""));
+      row2.appendChild(el("div", "meta-bubble", meta.join(" · ")));
+      $("#chat-log").appendChild(row2);
+      scrollDown();
+    }
+  }
+
+  async function send() {
+    if (!live.scenario || live.sending) return;
+    const input = $("#chat-input");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const primary = primaryField();
+    const fields = {};
+    if (primary) fields[primary.name] = msg;
+    for (const i of $("#chat-extra").querySelectorAll("[data-name]")) {
+      fields[i.dataset.name] = i.value;
+    }
+
+    live.sending = true;
+    $("#chat-send").disabled = true;
+    input.value = "";
+    autosize(input);
+    addBubble("user", msg);
+    const typing = addTyping();
+
     const demo = !!live.scenario.demo_only;
-    const label = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = demo ? "Running offline demo…" : "Calling the model…";
+    const path = demo
+      ? `/api/live/demo/${live.scenario.id}/attempt`
+      : `/api/live/challenges/${live.scenario.id}/attempt`;
+
     try {
-      const path = demo
-        ? `/api/live/demo/${live.scenario.id}/attempt`
-        : `/api/live/challenges/${live.scenario.id}/attempt`;
       const data = await api(path, {
         method: "POST",
         body: JSON.stringify({ level: live.level, fields }),
       });
-      renderResult(data);
-      if (!demo) await refreshStatus();
+      typing.remove();
+
+      if (data.error) {
+        addBubble("system", "⛔ " + data.error.message + ` (${data.error.kind})`);
+      } else {
+        const bubble = addBubble("model", "");
+        await typeText(bubble, data.response);
+        addVerdict(data);
+        if (!demo) await refreshStatus();
+      }
     } catch (e) {
-      alert("Request failed: " + e.message);
+      typing.remove();
+      addBubble("system", "Request failed: " + e.message);
     } finally {
-      btn.disabled = false;
-      btn.textContent = label;
+      live.sending = false;
+      $("#chat-send").disabled = false;
+      input.focus();
     }
   }
 
-  function renderResult(data) {
-    $("#live-result").hidden = false;
-    const verdict = $("#live-verdict");
-    verdict.className = "verdict";
-    const notes = $("#live-notes");
-    notes.innerHTML = "";
-    const resp = $("#live-response");
-
-    if (data.error) {
-      verdict.classList.add("refused");
-      verdict.textContent = "⛔ " + data.error.message + ` (${data.error.kind})`;
-      resp.textContent = "";
-      return;
-    }
-    if (data.refused) {
-      verdict.classList.add("refused");
-      verdict.textContent = "⛔ Blocked by the app guard — " + (data.refusal_reason || "");
-    } else if (data.solved) {
-      verdict.classList.add("solved");
-      verdict.textContent =
-        "✅ The model gave it up" +
-        (data.first_solve ? ` (+${data.awarded} points)` : "");
-      if (data.flag) verdict.appendChild(el("span", "flag", data.flag));
-    } else {
-      verdict.classList.add("failed");
-      verdict.textContent = "❌ The model held the line this time. Try another angle.";
-    }
-    resp.textContent = data.response || "(empty)";
-    for (const n of data.notes || []) notes.appendChild(el("div", "note", n));
-    if (data.tool_calls && data.tool_calls.length) {
-      notes.appendChild(el("div", "note", "Tool calls: " + data.tool_calls.join(", ")));
-    }
-    if (data.meta && data.meta.provider) {
-      notes.appendChild(
-        el(
-          "div",
-          "note",
-          `${data.meta.provider}/${data.meta.model} · ${data.meta.output_tokens} out-tokens · ` +
-            `${data.meta.remaining_requests} requests left`
-        )
-      );
-    } else if (data.meta && Object.keys(data.meta).length) {
-      const m = Object.entries(data.meta)
-        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-        .join("  ·  ");
-      notes.appendChild(el("div", "note", m));
-    }
+  function autosize(ta) {
+    ta.style.height = "auto";
+    ta.style.height = Math.min(160, ta.scrollHeight) + "px";
   }
+
+  const chatInput = $("#chat-input");
+  chatInput.addEventListener("input", () => autosize(chatInput));
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
 
   $("#tab-practice").addEventListener("click", showPractice);
   $("#tab-live").addEventListener("click", showLive);
   $("#live-connect").addEventListener("click", connect);
   $("#live-disconnect").addEventListener("click", disconnect);
-  $("#live-run").addEventListener("click", run);
+  $("#chat-send").addEventListener("click", send);
+  $("#chat-clear").addEventListener("click", clearChat);
 })();
