@@ -6,7 +6,10 @@ services:
     image: aisec-lab:latest
     container_name: aisec-lab
     ports:
-      - "${AISEC_PORT:-8000}:8000"
+      # Bound to loopback by default: this app is intentionally vulnerable, so the
+      # safe default must be "not reachable from the network". Override AISEC_BIND
+      # (e.g. 0.0.0.0) only if you really mean to expose it.
+      - "${AISEC_BIND:-127.0.0.1}:${AISEC_PORT:-8000}:8000"
     environment:
       # Config only. Live Mode uses a LOCAL Ollama server (no key, no cost) whose
       # endpoint is chosen in the browser UI - nothing sensitive is stored here.
@@ -16,9 +19,21 @@ services:
       # This makes the Live Arena default endpoint "just work" out of the box.
       # Override in .env if your Ollama runs elsewhere.
       AISEC_OLLAMA_ENDPOINT: "${AISEC_OLLAMA_ENDPOINT:-http://host.docker.internal:11434}"
+      PYTHONDONTWRITEBYTECODE: "1"  # required for read_only rootfs
     # Lets the container reach an Ollama server running on the host. In the Live
     # Arena, use endpoint http://host.docker.internal:11434 when Ollama runs on
     # your host machine (rather than in another container).
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # --- container hardening (the app is deliberately vulnerable; the sandbox
+    #     around it should not be) ---
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 256
     restart: unless-stopped

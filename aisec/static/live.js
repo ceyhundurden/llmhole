@@ -13,6 +13,10 @@
   };
 
   const $ = (s) => document.querySelector(s);
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
   const el = (tag, cls, text) => {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -114,7 +118,7 @@
         opt.label = "installed";
         dl.appendChild(opt);
       }
-      hint.innerHTML = "Installed: " + names.map((n) => `<code>${n}</code>`).join(", ");
+      hint.innerHTML = "Installed: " + names.map((n) => `<code>${esc(n)}</code>`).join(", ");
       if (!$("#live-model").value && names.length) $("#live-model").value = names[0];
     } catch (e) {
       hint.textContent = "Could not query installed models.";

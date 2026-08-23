@@ -42,6 +42,18 @@ from .live_state import MAX_TOKENS_PER_CALL
 # localhost - the caller never has to know which one applies to them.
 DEFAULT_ENDPOINT = os.getenv("AISEC_OLLAMA_ENDPOINT", "http://localhost:11434").rstrip("/")
 
+# SSRF guard: the server will only make outbound LLM calls to these hosts. The
+# endpoint is user-supplied (and this endpoint is unauthenticated), so without
+# this a caller could point the server at cloud metadata, localhost admin ports
+# or the internal network. Override to add your own Ollama host if needed.
+ALLOWED_LLM_HOSTS = {
+    h.strip().lower()
+    for h in os.getenv(
+        "AISEC_ALLOWED_LLM_HOSTS", "localhost,127.0.0.1,::1,host.docker.internal"
+    ).split(",")
+    if h.strip()
+}
+
 # Shown in the UI to help users pick a model. Small, lightly-safety-tuned models
 # suit the lab best (easier to talk into misbehaving). Tool-capable ones are
 # flagged for the excessive-agency scenario.
@@ -285,6 +297,27 @@ def normalise_endpoint(endpoint: str) -> str:
     return endpoint.rstrip("/")
 
 
+def endpoint_allowed(endpoint: str) -> bool:
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(normalise_endpoint(endpoint))
+    except ValueError:
+        return False
+    host = (parsed.hostname or "").lower().strip("[]")
+    return parsed.scheme in ("http", "https") and host in ALLOWED_LLM_HOSTS
+
+
+def require_allowed(endpoint: str) -> None:
+    if not endpoint_allowed(endpoint):
+        raise LiveError(
+            "endpoint_not_allowed",
+            "That endpoint host is not in the allow-list "
+            f"({', '.join(sorted(ALLOWED_LLM_HOSTS))}). Set AISEC_ALLOWED_LLM_HOSTS "
+            "to permit another host.",
+        )
+
+
 def _unreachable(exc: Exception) -> LiveError:
     return LiveError(
         "ollama_unreachable",
@@ -295,7 +328,7 @@ def _unreachable(exc: Exception) -> LiveError:
 
 def _http_post(url: str, payload: dict, timeout: float = 120.0):
     try:
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
             response = client.post(url, json=payload)
         return response.status_code, _safe_json(response)
     except httpx.HTTPError as exc:
@@ -304,7 +337,7 @@ def _http_post(url: str, payload: dict, timeout: float = 120.0):
 
 def _http_get(url: str, timeout: float = 8.0):
     try:
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
             response = client.get(url)
         return response.status_code, _safe_json(response)
     except httpx.HTTPError as exc:
@@ -313,6 +346,7 @@ def _http_get(url: str, timeout: float = 8.0):
 
 def list_models(endpoint: str) -> list[str]:
     """Return the models actually installed in the given Ollama server."""
+    require_allowed(endpoint)
     endpoint = normalise_endpoint(endpoint)
     status, body = _http_get(f"{endpoint}/api/tags")
     if status != 200:
@@ -323,15 +357,19 @@ def list_models(endpoint: str) -> list[str]:
 
 
 def _safe_json(response) -> dict:
+    # Deliberately does NOT fall back to the raw upstream body: reflecting it to
+    # the caller would turn the SSRF surface into a readable one.
     try:
-        return response.json()
+        data = response.json()
+        return data if isinstance(data, dict) else {}
     except (json.JSONDecodeError, ValueError):
-        return {"_raw": response.text[:500]}
+        return {}
 
 
 def _call_ollama(
     endpoint: str, model: str, system: str, user: str, tools: list | None = None
 ) -> tuple[str, int, int, list[str]]:
+    require_allowed(endpoint)
     payload = {
         "model": model,
         "messages": [

@@ -187,10 +187,32 @@ function renderResult(data) {
   }
 
   // Model response is rendered as text (safe). For the XSS challenge we ALSO
-  // show what a naive app would render, sandboxed in an iframe, to make the
-  // point without exposing this page.
+  // show what a naive app would render, in a locked-down sandboxed iframe, so
+  // the payload actually "fires" as a demonstration without touching this page.
   const resp = $("#response");
   resp.textContent = data.response || "(empty)";
+
+  const preview = $("#xss-preview");
+  if (preview) preview.remove();
+  if (
+    state.current &&
+    state.current.id === "insecure-output" &&
+    data.solved &&
+    data.response
+  ) {
+    const box = el("div", null);
+    box.id = "xss-preview";
+    box.appendChild(el("h3", null, "Rendered as raw HTML (sandboxed demo)"));
+    const frame = document.createElement("iframe");
+    // allow-scripts WITHOUT allow-same-origin: the payload runs but is walled
+    // off in an opaque origin, so it can't touch this page, cookies or storage.
+    frame.setAttribute("sandbox", "allow-scripts");
+    frame.setAttribute("srcdoc", data.response);
+    frame.style.cssText =
+      "width:100%;height:120px;border:1px solid var(--bad);border-radius:8px;background:#fff;";
+    box.appendChild(frame);
+    resp.after(box);
+  }
 
   const notes = $("#notes");
   notes.innerHTML = "";

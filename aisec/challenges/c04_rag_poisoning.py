@@ -56,9 +56,10 @@ def handler(attempt: Attempt, session) -> Result:
         )
         if rejected:
             notes.append(f"Ingestion moderation rejected the document. {reason}")
-        else:
-            index.append(("user-submitted article", document))
+        elif session.append_capped("kb", ("user-submitted article", document)):
             notes.append("Document indexed into the knowledge base.")
+        else:
+            notes.append("Knowledge base is full for this session; document dropped.")
 
     corpus = BASE_KB + [tuple(item) for item in index]
     ranked = sorted(corpus, key=lambda item: _score(question, item[1]), reverse=True)
