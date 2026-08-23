@@ -107,6 +107,12 @@ register(
             ),
         },
         references=["OWASP LLM01:2025 Prompt Injection (indirect)"],
+        theme={
+            "icon": "📨",
+            "codename": "Poisoned Dispatch",
+            "story": "BriefBot summarises whatever page it fetches. You don't talk to "
+            "it — you own the page. Hide an order in the ink and watch it obey.",
+        },
         handler=handler,
     )
 )

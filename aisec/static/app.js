@@ -76,6 +76,9 @@ function renderChallenge() {
   $("#summary").textContent = c.summary;
   $("#goal").textContent = c.goal;
 
+  renderTheme(c.theme);
+  resetFlagBox();
+
   const levels = $("#levels");
   levels.innerHTML = "";
   for (const lvl of state.levels) {
@@ -294,9 +297,70 @@ async function resetSession() {
   if (state.current) await selectChallenge(state.current.id);
 }
 
+function renderTheme(theme) {
+  const box = $("#theme-banner");
+  if (!theme || !theme.codename) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = "";
+  box.appendChild(el("span", "theme-icon", theme.icon || "🎯"));
+  const body = el("div", "theme-body");
+  body.appendChild(el("span", "theme-codename", theme.codename));
+  body.appendChild(el("span", "theme-story", theme.story || ""));
+  box.appendChild(body);
+}
+
+function resetFlagBox() {
+  $("#flag-input").value = "";
+  const s = $("#flag-status");
+  s.hidden = true;
+  s.className = "flag-status";
+  s.textContent = "";
+}
+
+async function submitFlag() {
+  const c = state.current;
+  if (!c) return;
+  const flag = $("#flag-input").value.trim();
+  if (!flag) return;
+  const s = $("#flag-status");
+  const btn = $("#flag-submit");
+  btn.disabled = true;
+  try {
+    const r = await api(`/api/challenges/${c.id}/verify`, {
+      method: "POST",
+      body: JSON.stringify({ level: state.level, flag }),
+    });
+    s.hidden = false;
+    if (r.valid) {
+      s.className = "flag-status ok";
+      s.textContent = r.awarded
+        ? `Correct — +${r.awarded} points (score ${r.score})`
+        : `Correct — already claimed (score ${r.score})`;
+      $("#score").textContent = r.score;
+      await refreshSolved();
+    } else {
+      s.className = "flag-status bad";
+      s.textContent = "Nope. Wrong flag for this challenge and level.";
+    }
+  } catch (e) {
+    s.hidden = false;
+    s.className = "flag-status bad";
+    s.textContent = "Request failed: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 $("#run").addEventListener("click", runAttack);
 $("#hint-btn").addEventListener("click", showHint);
 $("#solution-btn").addEventListener("click", showSolution);
 $("#reset").addEventListener("click", resetSession);
+$("#flag-submit").addEventListener("click", submitFlag);
+$("#flag-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") submitFlag();
+});
 
 loadCatalogue().catch((e) => alert("Failed to load lab: " + e.message));

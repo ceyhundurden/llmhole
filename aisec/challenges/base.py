@@ -54,6 +54,7 @@ class Challenge:
     solution: dict[str, str]
     handler: Callable[[Attempt, "object"], Result]
     references: list[str] = field(default_factory=list)
+    theme: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         return {
@@ -63,6 +64,7 @@ class Challenge:
             "difficulty": self.difficulty,
             "summary": self.summary,
             "goal": self.goal,
+            "theme": self.theme,
             "references": self.references,
             "fields": [
                 {
