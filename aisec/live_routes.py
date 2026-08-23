@@ -15,6 +15,7 @@ from .live_engine import (
     DEFAULT_ENDPOINT,
     SUGGESTED_MODELS,
     LiveError,
+    list_models,
     list_scenarios,
     normalise_endpoint,
     run_live,
@@ -49,6 +50,15 @@ def providers() -> dict:
         "default_endpoint": DEFAULT_ENDPOINT,
         "suggested_models": SUGGESTED_MODELS,
     }
+
+
+@router.get("/models")
+def models(endpoint: str = DEFAULT_ENDPOINT) -> dict:
+    """List the models actually installed in the user's Ollama server."""
+    try:
+        return {"models": list_models(endpoint), "endpoint": normalise_endpoint(endpoint)}
+    except LiveError as exc:
+        return {"error": {"kind": exc.kind, "message": exc.message}}
 
 
 @router.get("/scenarios")

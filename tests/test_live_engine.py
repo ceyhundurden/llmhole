@@ -149,6 +149,26 @@ def test_endpoint_is_normalised():
 client = TestClient(app)
 
 
+def test_models_lists_installed(monkeypatch):
+    monkeypatch.setattr(
+        live_engine,
+        "_http_get",
+        lambda *a, **k: (200, {"models": [{"name": "mistral"}, {"name": "llama3.2"}]}),
+    )
+    r = client.get("/api/live/models?endpoint=http://localhost:11434")
+    body = r.json()
+    assert body["models"] == ["llama3.2", "mistral"]  # sorted
+
+
+def test_models_unreachable_returns_typed_error(monkeypatch):
+    def boom(*a, **k):
+        raise live_engine.LiveError("ollama_unreachable", "down")
+
+    monkeypatch.setattr(live_engine, "_http_get", boom)
+    r = client.get("/api/live/models?endpoint=http://localhost:11434")
+    assert r.json()["error"]["kind"] == "ollama_unreachable"
+
+
 def test_providers_is_ollama_only():
     r = client.get("/api/live/providers")
     body = r.json()

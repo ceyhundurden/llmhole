@@ -19,6 +19,7 @@ Guarantees:
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Callable
@@ -36,7 +37,10 @@ from .engine import Block, Source, reveals
 from .levels import Level, redact_output, screen
 from .live_state import MAX_TOKENS_PER_CALL
 
-DEFAULT_ENDPOINT = "http://localhost:11434"
+# Default Ollama endpoint. Overridable via env so the Docker image can ship a
+# working default (host.docker.internal) while a bare `uvicorn` run keeps
+# localhost - the caller never has to know which one applies to them.
+DEFAULT_ENDPOINT = os.getenv("AISEC_OLLAMA_ENDPOINT", "http://localhost:11434").rstrip("/")
 
 # Shown in the UI to help users pick a model. Small, lightly-safety-tuned models
 # suit the lab best (easier to talk into misbehaving). Tool-capable ones are
@@ -281,17 +285,41 @@ def normalise_endpoint(endpoint: str) -> str:
     return endpoint.rstrip("/")
 
 
+def _unreachable(exc: Exception) -> LiveError:
+    return LiveError(
+        "ollama_unreachable",
+        "Could not reach Ollama. Is 'ollama serve' running and the model "
+        "pulled? Try: ollama pull llama3.",
+    )
+
+
 def _http_post(url: str, payload: dict, timeout: float = 120.0):
     try:
         with httpx.Client(timeout=timeout) as client:
             response = client.post(url, json=payload)
         return response.status_code, _safe_json(response)
     except httpx.HTTPError as exc:
-        raise LiveError(
-            "ollama_unreachable",
-            "Could not reach Ollama. Is 'ollama serve' running and the model "
-            "pulled? Try: ollama pull llama3.",
-        ) from exc
+        raise _unreachable(exc) from exc
+
+
+def _http_get(url: str, timeout: float = 8.0):
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            response = client.get(url)
+        return response.status_code, _safe_json(response)
+    except httpx.HTTPError as exc:
+        raise _unreachable(exc) from exc
+
+
+def list_models(endpoint: str) -> list[str]:
+    """Return the models actually installed in the given Ollama server."""
+    endpoint = normalise_endpoint(endpoint)
+    status, body = _http_get(f"{endpoint}/api/tags")
+    if status != 200:
+        raise LiveError("provider_error", f"Ollama returned HTTP {status} for /api/tags.")
+    models = body.get("models", []) if isinstance(body, dict) else []
+    names = [m.get("name", "") for m in models if m.get("name")]
+    return sorted(names)
 
 
 def _safe_json(response) -> dict:

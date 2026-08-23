@@ -110,6 +110,9 @@ body {
 .live-form { display: flex; gap: 12px; flex-wrap: wrap; }
 .live-form .field { flex: 0 0 180px; }
 .live-form .field.grow { flex: 1 1 260px; }
+.model-row { display: flex; gap: 8px; }
+.model-row input { flex: 1; }
+.model-row .ghost { flex: 0 0 auto; padding: 10px 12px; white-space: nowrap; }
 .determinism-note { color: var(--warn); font-size: 12.5px; }
 
 /* --- Live Arena chat --- */

@@ -106,9 +106,12 @@
       </div>
       <div class="field grow">
         <label>Model (pulled in Ollama)</label>
-        <input id="live-model" type="text" list="live-model-list" placeholder="llama3.2" />
+        <div class="model-row">
+          <input id="live-model" type="text" list="live-model-list" placeholder="llama3.2" />
+          <button id="live-refresh-models" class="ghost" type="button" title="List models installed in your Ollama">↻ Installed</button>
+        </div>
         <datalist id="live-model-list"></datalist>
-        <div class="fhelp">The model runs on your machine. Pre-pull it: <code>ollama pull &lt;model&gt;</code>.</div>
+        <div id="live-models-hint" class="fhelp">The model runs on your machine. Pull others with <code>ollama pull &lt;model&gt;</code>, then click “↻ Installed”.</div>
       </div>
     </div>
     <div class="actions">

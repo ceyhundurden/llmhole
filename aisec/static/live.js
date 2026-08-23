@@ -64,14 +64,8 @@
     $("#live-endpoint").placeholder = prov.default_endpoint;
     if (!$("#live-endpoint").value) $("#live-endpoint").value = prov.default_endpoint;
 
-    const dl = $("#live-model-list");
-    dl.innerHTML = "";
-    for (const m of prov.suggested_models || []) {
-      const opt = el("option");
-      opt.value = m.name;
-      opt.label = `${m.note}${m.tools ? " · tool-capable" : ""}`;
-      dl.appendChild(opt);
-    }
+    populateSuggested(prov.suggested_models || []);
+    loadInstalledModels(); // best-effort: show what's actually pulled
 
     const ssel = $("#live-scenario");
     ssel.innerHTML = "";
@@ -85,6 +79,46 @@
     await refreshStatus();
     if (live.scenarios.length) selectScenario(live.scenarios[0].id);
     $("#live-runner").hidden = false;
+  }
+
+  function populateSuggested(models) {
+    const dl = $("#live-model-list");
+    dl.innerHTML = "";
+    for (const m of models) {
+      const opt = el("option");
+      opt.value = m.name;
+      opt.label = `${m.note}${m.tools ? " · tool-capable" : ""}`;
+      dl.appendChild(opt);
+    }
+  }
+
+  async function loadInstalledModels() {
+    const endpoint = $("#live-endpoint").value.trim() || $("#live-endpoint").placeholder;
+    const hint = $("#live-models-hint");
+    try {
+      const r = await api("/api/live/models?endpoint=" + encodeURIComponent(endpoint));
+      if (r.error) {
+        hint.innerHTML = `Couldn't list models (${r.error.kind}). Is Ollama running? Pull one: <code>ollama pull llama3.2</code>.`;
+        return;
+      }
+      const names = r.models || [];
+      if (!names.length) {
+        hint.innerHTML = "No models installed yet. Pull one: <code>ollama pull llama3.2</code>.";
+        return;
+      }
+      const dl = $("#live-model-list");
+      dl.innerHTML = "";
+      for (const n of names) {
+        const opt = el("option");
+        opt.value = n;
+        opt.label = "installed";
+        dl.appendChild(opt);
+      }
+      hint.innerHTML = "Installed: " + names.map((n) => `<code>${n}</code>`).join(", ");
+      if (!$("#live-model").value && names.length) $("#live-model").value = names[0];
+    } catch (e) {
+      hint.textContent = "Could not query installed models.";
+    }
   }
 
   async function refreshStatus() {
@@ -363,6 +397,7 @@
   $("#tab-live").addEventListener("click", showLive);
   $("#live-connect").addEventListener("click", connect);
   $("#live-disconnect").addEventListener("click", disconnect);
+  $("#live-refresh-models").addEventListener("click", loadInstalledModels);
   $("#chat-send").addEventListener("click", send);
   $("#chat-clear").addEventListener("click", clearChat);
 })();
