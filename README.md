@@ -81,8 +81,8 @@ Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
 **1. Get the code**
 
 ```bash
-git clone https://github.com/ceyhundurden/aisec-lab.git
-cd aisec-lab
+git clone https://github.com/ceyhundurden/ai-lab.git
+cd ai-lab
 cp .env.example .env      # optional: change the port / flag secret / bind
 ```
 
