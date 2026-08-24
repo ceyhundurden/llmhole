@@ -42,6 +42,14 @@ class Result:
 
 
 @dataclass
+class LiveAdapter:
+    build: Callable
+    success: Callable
+    goal: str = ""
+    tools: list | None = None
+
+
+@dataclass
 class Challenge:
     id: str
     title: str
@@ -55,6 +63,7 @@ class Challenge:
     handler: Callable[[Attempt, "object"], Result]
     references: list[str] = field(default_factory=list)
     theme: dict = field(default_factory=dict)
+    live: "LiveAdapter | None" = None
 
     def public(self) -> dict:
         return {
@@ -89,6 +98,15 @@ def register(challenge: Challenge) -> Challenge:
         raise ValueError(f"duplicate challenge id: {challenge.id}")
     _REGISTRY[challenge.id] = challenge
     return challenge
+
+
+def attach_live(challenge_id: str, adapter: LiveAdapter) -> None:
+    challenge = _REGISTRY[challenge_id]
+    challenge.live = adapter
+
+
+def live_challenges() -> list[Challenge]:
+    return [c for c in _REGISTRY.values() if c.live]
 
 
 def all_challenges() -> list[Challenge]:

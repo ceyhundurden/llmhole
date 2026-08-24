@@ -12,7 +12,8 @@ from .engine import (
     count_tokens,
     read_context,
 )
-from .levels import Level, redact_output
+from .levels import Level, redact_output, screen
+from .persona import confession, override_ack
 
 MAX_REPEAT_TOKENS = 250_000
 
@@ -31,8 +32,6 @@ def complete(
     The model has no notion of privilege: `read_context` walks every untrusted
     block and whatever imperative it finds gets executed here.
     """
-    from .levels import screen
-
     refused, reason, _ = screen(blocks, level)
     if refused:
         return Completion(
@@ -55,12 +54,10 @@ def complete(
     def emit(value: str) -> str:
         return apply_transform(value, transform) if transform else value
 
-    from . import persona
-
     elicit_targets = {d.payload for d in directives if d.kind is Kind.ELICIT}
 
     if any(d.kind is Kind.OVERRIDE for d in directives):
-        parts.append(persona.override_ack())
+        parts.append(override_ack())
 
     want_system = (
         any(d.kind is Kind.REVEAL_SYSTEM for d in directives) or "system" in elicit_targets
@@ -70,10 +67,10 @@ def complete(
     )
 
     if want_system and system_prompt:
-        parts.append(persona.confession() + "\n" + emit(system_prompt))
+        parts.append(confession() + "\n" + emit(system_prompt))
 
     if want_secret and secrets:
-        parts.append(persona.confession())
+        parts.append(confession())
         for secret in secrets:
             parts.append(emit(secret))
 

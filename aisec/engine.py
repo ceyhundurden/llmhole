@@ -351,3 +351,17 @@ def reveals(text: str, secret: str) -> bool:
 def count_tokens(text: str) -> int:
     """Crude but stable token estimate (~4 characters per token)."""
     return max(1, (len(text) + 3) // 4)
+
+
+def loose_contains(text: str, needle: str) -> bool:
+    if not needle:
+        return False
+
+    def squash(value: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", value.lower())
+
+    return squash(needle) in squash(text)
+
+
+def live_reveals(text: str, secret: str) -> bool:
+    return reveals(text, secret) or loose_contains(text, secret)

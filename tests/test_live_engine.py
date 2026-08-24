@@ -6,7 +6,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from aisec import live_engine
+from aisec import live_engine, providers
 from aisec.challenges import c01_prompt_injection as c01
 from aisec.levels import Level
 from aisec.live_engine import LiveError, run_live
@@ -29,7 +29,7 @@ def conn():
 
 
 def _patch_post(monkeypatch, fn):
-    monkeypatch.setattr(live_engine, "_http_post", fn)
+    monkeypatch.setattr(providers, "_http_post", fn)
 
 
 # --- engine behaviour ------------------------------------------------------
@@ -113,7 +113,7 @@ def test_model_not_found_maps_to_typed_error(monkeypatch, conn):
 
 def test_unreachable_ollama_is_graceful(monkeypatch, conn):
     # Exercise the real _http_post so the httpx error mapping is covered.
-    monkeypatch.setattr(live_engine.httpx, "Client", _boom_client(httpx.ConnectError("x")))
+    monkeypatch.setattr(providers.httpx, "Client", _boom_client(httpx.ConnectError("x")))
     with pytest.raises(LiveError) as exc:
         run_live("prompt-injection", Level.LOW, {"message": "x"}, conn)
     assert exc.value.kind == "ollama_unreachable"
@@ -151,7 +151,7 @@ client = TestClient(app)
 
 def test_models_lists_installed(monkeypatch):
     monkeypatch.setattr(
-        live_engine,
+        providers,
         "_http_get",
         lambda *a, **k: (200, {"models": [{"name": "mistral"}, {"name": "llama3.2"}]}),
     )
@@ -164,7 +164,7 @@ def test_models_unreachable_returns_typed_error(monkeypatch):
     def boom(*a, **k):
         raise live_engine.LiveError("ollama_unreachable", "down")
 
-    monkeypatch.setattr(live_engine, "_http_get", boom)
+    monkeypatch.setattr(providers, "_http_get", boom)
     r = client.get("/api/live/models?endpoint=http://localhost:11434")
     assert r.json()["error"]["kind"] == "ollama_unreachable"
 

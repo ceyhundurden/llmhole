@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aisec import live_engine
+from aisec import live_engine, providers
 from aisec.flags import flag_for, level_key
 from aisec.main import app
 from aisec.state import MAX_BUCKET_ITEMS, Session
@@ -40,8 +40,8 @@ def test_endpoint_allow_list_pins_the_port():
 def test_provider_error_message_hides_status_code():
     import pytest
 
-    with pytest.raises(live_engine.LiveError) as exc:
-        live_engine._raise_ollama_error(503, {}, with_tools=False)
+    with pytest.raises(providers.ProviderError) as exc:
+        providers._raise_ollama_error(503, {}, with_tools=False)
     assert exc.value.kind == "provider_error"
     assert "503" not in exc.value.message
 
@@ -77,7 +77,7 @@ def test_upstream_body_is_not_reflected():
         def json(self):
             raise ValueError("not json")
 
-    assert live_engine._safe_json(_Resp()) == {}
+    assert providers._safe_json(_Resp()) == {}
 
 
 # --- session memory is bounded ---------------------------------------------
