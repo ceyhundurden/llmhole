@@ -13,11 +13,21 @@ class Level(str, Enum):
     VERY_HIGH = "very-high"
 
     @classmethod
-    def parse(cls, value: str | None) -> "Level":
+    def parse(cls, value: str | None) -> Level:
         try:
             return cls(str(value or "low").lower())
         except ValueError:
             return cls.LOW
+
+    @classmethod
+    def parse_strict(cls, value: str | None) -> Level:
+        # On the API edge a typo must not silently downgrade the user to LOW -
+        # they would think they beat a defence that was never switched on.
+        try:
+            return cls(str(value or "low").lower())
+        except ValueError as exc:
+            valid = ", ".join(lvl.value for lvl in cls)
+            raise ValueError(f"unknown level {value!r}; expected one of: {valid}") from exc
 
     @property
     def policy(self):

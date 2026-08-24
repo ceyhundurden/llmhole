@@ -221,6 +221,7 @@ The UI is a thin client over a small JSON API:
 | `LLMHOLE_BIND` | `127.0.0.1` | Interface the container publishes on |
 | `LLMHOLE_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
 | `LLMHOLE_MAX_SESSIONS` / `LLMHOLE_SESSION_TTL` / `LLMHOLE_MAX_BUCKET_ITEMS` | `5000` / `21600` / `200` | Session memory bounds |
+| `LLMHOLE_MAX_LIVE_REQUESTS` | `100` | Live Mode attempts per session |
 
 ## Security & scope
 

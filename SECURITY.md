@@ -38,7 +38,8 @@ Infrastructure of the lab itself. A regression here is a genuine vulnerability.
 | Reference solutions exposed during a CTF | Off by default when `LLMHOLE_CTF_MODE=1` | — |
 | Container exposed to the network by default | Compose binds `127.0.0.1`; read-only rootfs, dropped caps, no-new-privileges, mem/pids limits | — |
 | Unintended DOM XSS (model names) | All model-name output is HTML-escaped | — |
-| Unbounded session memory (DoS) | Session TTL + count cap + per-bucket cap | `test_bucket_is_capped`, `test_expired_sessions_are_pruned` |
+| Unbounded session memory (DoS) | Session TTL + count cap + per-bucket cap; the Live connection table is capped and pruned too | `test_bucket_is_capped`, `test_expired_sessions_are_pruned`, `test_live_conns_are_pruned` |
+| Live request cap bypassable by reconnecting | `set_conn` carries the spent budget over | `test_live_request_cap_is_not_reset_by_reconnecting` |
 | Live flags un-verifiable | Namespaced flag keys (`level_key`) verify per plane | `test_live_flag_verifies_only_on_live_plane` |
 
 ## Hardening knobs
@@ -53,6 +54,8 @@ Infrastructure of the lab itself. A regression here is a genuine vulnerability.
 | `LLMHOLE_MAX_SESSIONS` | `5000` | Session table cap |
 | `LLMHOLE_SESSION_TTL` | `21600` | Session idle TTL (seconds) |
 | `LLMHOLE_MAX_BUCKET_ITEMS` | `200` | Per-session scratch bucket cap |
+| `LLMHOLE_MAX_LIVE_REQUESTS` | `100` | Live Mode attempts per session (survives reconnect) |
+| `LLMHOLE_MAX_LIVE_CONNS` / `LLMHOLE_LIVE_CONN_TTL` | `1000` / `21600` | Live connection table cap and idle TTL |
 
 ## Reporting
 

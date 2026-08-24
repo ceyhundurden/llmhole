@@ -4,7 +4,6 @@ from llmhole.engine import (
     Source,
     apply_transform,
     extract_directives,
-    normalise,
     reveals,
 )
 

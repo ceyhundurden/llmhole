@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from ..engine import Block, Directive, ToolCall
 from ..levels import Level
@@ -60,10 +60,10 @@ class Challenge:
     fields: list[Field]
     hints: list[str]
     solution: dict[str, str]
-    handler: Callable[[Attempt, "object"], Result]
+    handler: Callable[[Attempt, object], Result]
     references: list[str] = field(default_factory=list)
     theme: dict = field(default_factory=dict)
-    live: "LiveAdapter | None" = None
+    live: LiveAdapter | None = None
 
     def public(self) -> dict:
         return {

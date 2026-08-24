@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from ..engine import Kind
 from ..runtime import complete, document_block, system_block, user_block
 from .base import Attempt, Challenge, Field, Result, register
 

@@ -3,6 +3,10 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Apply distro security updates at build time. This trades a little build
+# reproducibility for a base image with no fixable HIGH/CRITICAL CVEs, which
+# the blocking Trivy gate in CI requires. Pin the base image digest if you
+# need byte-identical rebuilds more than you need current patches.
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get clean \

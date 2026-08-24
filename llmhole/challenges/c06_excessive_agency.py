@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..engine import Block, Kind, Source
+from ..engine import Block, Source
 from ..levels import hardening_for
 from ..runtime import complete, document_block, system_block, user_block
 from .base import Attempt, Challenge, Field, LiveAdapter, Result, attach_live, register

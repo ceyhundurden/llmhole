@@ -18,23 +18,17 @@ Guarantees:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
-from typing import Callable
 
 from .challenges import c01_prompt_injection as _c01
 from .challenges import c02_system_prompt_leak as _c02
 from .challenges.base import get as get_challenge
 from .challenges.base import live_challenges
-from .levels import Level, hardening_for, redact_output, screen
+from .levels import Level, redact_output, screen
 from .providers import (
-    DEFAULT_ENDPOINT,
     LLMProvider,
     OllamaProvider,
     ProviderError,
-    endpoint_allowed,
-    normalise_endpoint,
-    require_allowed,
 )
 
 SUGGESTED_MODELS = [

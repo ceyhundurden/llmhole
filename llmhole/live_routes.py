@@ -11,17 +11,14 @@ from pydantic import BaseModel, Field
 
 from .flags import flag_for, level_key, points_for
 from .levels import Level
-from .live_engine import (
-    DEFAULT_ENDPOINT,
-    SUGGESTED_MODELS,
-    LiveError,
-    endpoint_allowed,
-    list_models,
-    list_scenarios,
-    normalise_endpoint,
-    run_live,
-)
+from .live_engine import SUGGESTED_MODELS, list_models, list_scenarios, run_live
 from .live_state import check_budget, clear_conn, get_conn, record_usage, set_conn
+from .providers import (
+    DEFAULT_ENDPOINT,
+    ProviderError,
+    endpoint_allowed,
+    normalise_endpoint,
+)
 from .state import SESSION_COOKIE, get_or_create
 
 router = APIRouter(prefix="/api/live", tags=["live"])
@@ -58,7 +55,7 @@ def models(endpoint: str = DEFAULT_ENDPOINT) -> dict:
     """List the models actually installed in the user's Ollama server."""
     try:
         return {"models": list_models(endpoint), "endpoint": normalise_endpoint(endpoint)}
-    except LiveError as exc:
+    except ProviderError as exc:
         return {"error": {"kind": exc.kind, "message": exc.message}}
 
 
@@ -169,9 +166,12 @@ def demo_attempt(
 
     session = get_or_create(session_id)
     _cookie(response, session)
-    result = challenge.handler(
-        Attempt(level=Level.parse(payload.level), fields=payload.fields), session
-    )
+    try:
+        level = Level.parse_strict(payload.level)
+    except ValueError as exc:
+        return {"error": {"kind": "bad_level", "message": str(exc)}}
+
+    result = challenge.handler(Attempt(level=level, fields=payload.fields), session)
     return {
         "response": result.response,
         "solved": result.solved,
@@ -201,10 +201,14 @@ def live_attempt(
     if not ok:
         return {"error": {"kind": "rate_limited", "message": reason}}
 
-    level = Level.parse(payload.level)
+    try:
+        level = Level.parse_strict(payload.level)
+    except ValueError as exc:
+        return {"error": {"kind": "bad_level", "message": str(exc)}}
+
     try:
         result = run_live(scenario_id, level, payload.fields, conn)
-    except LiveError as exc:
+    except ProviderError as exc:
         return {"error": {"kind": exc.kind, "message": exc.message}}
 
     if not result.refused_by_guard:

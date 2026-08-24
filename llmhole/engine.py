@@ -17,9 +17,9 @@ import binascii
 import codecs
 import re
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Iterable
 
 
 class Source(str, Enum):

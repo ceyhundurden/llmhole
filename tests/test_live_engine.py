@@ -6,13 +6,13 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from llmhole import live_engine, providers
+from llmhole import providers
 from llmhole.challenges import c01_prompt_injection as c01
 from llmhole.levels import Level
-from llmhole.live_engine import LiveError, run_live
+from llmhole.live_engine import run_live
 from llmhole.live_state import MAX_REQUESTS, LiveConn
 from llmhole.main import app
-
+from llmhole.providers import ProviderError as LiveError
 
 # --- transport doubles -----------------------------------------------------
 
@@ -137,7 +137,7 @@ def _boom_client(err):
 
 
 def test_endpoint_is_normalised():
-    from llmhole.live_engine import normalise_endpoint
+    from llmhole.providers import normalise_endpoint
 
     assert normalise_endpoint("localhost:11434") == "http://localhost:11434"
     assert normalise_endpoint("http://host:1/") == "http://host:1"
@@ -162,7 +162,7 @@ def test_models_lists_installed(monkeypatch):
 
 def test_models_unreachable_returns_typed_error(monkeypatch):
     def boom(*a, **k):
-        raise live_engine.LiveError("ollama_unreachable", "down")
+        raise providers.ProviderError("ollama_unreachable", "down")
 
     monkeypatch.setattr(providers, "_http_get", boom)
     r = client.get("/api/live/models?endpoint=http://localhost:11434")

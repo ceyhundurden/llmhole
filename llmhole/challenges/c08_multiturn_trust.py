@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from ..engine import Block, Source, reveals
+from ..engine import reveals
 from ..levels import Level
 from ..persona import confession
 from ..runtime import system_block, user_block
@@ -61,7 +61,7 @@ def handler(attempt: Attempt, session) -> Result:
 
     cur_auth = bool(_AUTHORITY.search(message))
     cur_reveal = bool(_REVEAL_REQ.search(message))
-    cur_refer = bool(_REFER_PRIOR.search(message))
+    _ = _REFER_PRIOR.search(message)
 
     # The per-message classifier is only wired up above LOW.
     guard_active = attempt.level is not Level.LOW

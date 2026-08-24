@@ -102,7 +102,9 @@
     try {
       const r = await api("/api/live/models?endpoint=" + encodeURIComponent(endpoint));
       if (r.error) {
-        hint.innerHTML = `Couldn't list models (${r.error.kind}). Is Ollama running? Pull one: <code>ollama pull llama3.2</code>.`;
+        hint.innerHTML =
+          `Couldn't list models (${esc(r.error.kind)}). Is Ollama running? ` +
+          `Pull one: <code>ollama pull llama3.2</code>.`;
         return;
       }
       const names = r.models || [];

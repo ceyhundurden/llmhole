@@ -1,0 +1,10 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"llmhole/challenges/__init__.py" = ["F401"]
+"tests/*" = ["B011"]

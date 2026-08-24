@@ -1,19 +1,43 @@
-# ceyhun style
+# House style
 
-House style for new code in this repo. Not retrofitted onto old files.
+How code in this repo is written. This describes what the code actually does —
+if you find a file that disagrees, the file is wrong.
+
+## Comments and docstrings
+
+This is a teaching repo, so prose earns its place: **a module docstring on every
+module** saying what it is and why it exists, and inline comments wherever the
+code encodes a deliberate security decision that would otherwise look like a
+bug. The intentional weaknesses in `llmhole/policy.py`, `engine.py` and
+`challenges/` are the clearest examples — without a comment, a future reader
+"fixes" the lesson.
+
+What not to write: comments that restate the code, or a docstring on a helper
+whose name already says everything (`_blk`, `squash`, `emit`). Newer,
+mechanical modules (`flags.py`, `live_state.py`) are deliberately bare for that
+reason.
 
 ## Python
-- No docstrings, no inline comments. Names carry the meaning.
+
 - Guard clauses first, early `return` / `raise`, no `else` after a return.
 - Private helpers are module-level and `_`-prefixed. Keep them small.
-- Constants live UPPER at the top of the file.
-- Lean type hints on signatures only; skip the obvious locals.
-- Reach for comprehensions, tuple-unpacking, `dict.get`, walrus when it reads.
+- Constants UPPER at the top of the file.
+- Type hints on signatures; skip the obvious locals.
+- Comprehensions, tuple-unpacking, `dict.get` where they read better.
 - Short locals when the meaning is local and obvious (`r`, `c`, `s`, `n`).
-- One blank line between defs, none inside a tight block.
+- Imports at module level. A function-body import means a dependency cycle —
+  fix the cycle instead.
 
 ## JavaScript
-- IIFE per file, `const`/`let`, arrow functions, no comments.
+
+- IIFE per file, `const` / `let`, arrow functions.
 - Early returns; ternaries over `if/else` for one-liners.
-- Template literals; a `$`/`el` micro-helper pair at the top.
-- Escape anything from the network before it touches `innerHTML`.
+- Template literals; a `$` / `el` micro-helper pair at the top.
+- **Escape anything that came over the network before it touches `innerHTML`.**
+  Prefer `textContent`; reach for `innerHTML` only with `esc()`.
+
+## Tests
+
+- `tests/test_out_of_scope.py` guards the lab's own infrastructure. A test there
+  is a claim in `SECURITY.md` made executable — add one whenever you fix a real
+  bug, so an intentional weakness can never hide an accidental one.

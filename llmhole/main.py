@@ -16,7 +16,7 @@ A single-page UI plus a small JSON API:
 
 from __future__ import annotations
 
-import os
+import logging
 from pathlib import Path
 
 from fastapi import Cookie, FastAPI, HTTPException, Response
@@ -37,6 +37,15 @@ app = FastAPI(
     description="Intentionally vulnerable AI/LLM app for security training. Do not deploy to the public internet.",
 )
 
+log = logging.getLogger("llmhole")
+
+
+def _level_or_400(value: str | None) -> Level:
+    try:
+        return Level.parse_strict(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
 _STATIC = Path(__file__).parent / "static"
 if _STATIC.exists():
     app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
@@ -49,6 +58,9 @@ try:
     app.include_router(live_router)
     _LIVE_AVAILABLE = True
 except Exception:  # pragma: no cover - defensive: never break offline mode
+    # Live Mode is optional, so a failure here must not take the offline lab
+    # down with it - but it must not vanish silently either.
+    log.exception("Live Mode is unavailable: failed to import llmhole.live_routes")
     _LIVE_AVAILABLE = False
 
 
@@ -127,7 +139,7 @@ def attempt(
     _session_response(response, session)
     session.attempts += 1
 
-    level = Level.parse(payload.level)
+    level = _level_or_400(payload.level)
     result = challenge.handler(Attempt(level=level, fields=payload.fields), session)
 
     body = {
@@ -180,7 +192,7 @@ def verify_flag(
     session = get_or_create(session_id)
     _session_response(response, session)
 
-    level = Level.parse(payload.level)
+    level = _level_or_400(payload.level)
     live = payload.plane == "live"
     key = level_key(level.value, payload.plane)
     ok = verify(challenge_id, key, payload.flag)
@@ -221,10 +233,25 @@ def scoreboard(
 ) -> dict:
     session = get_or_create(session_id)
     _session_response(response, session)
-    max_score = sum(points_for(lvl.value) for _ in all_challenges() for lvl in Level)
+    offline_max = sum(points_for(lvl.value) for _ in all_challenges() for lvl in Level)
+    live_max = sum(
+        points_for(lvl.value)
+        for c in all_challenges()
+        if getattr(c, "live", None)
+        for lvl in Level
+        if lvl is not Level.VERY_HIGH
+    )
+    offline_score = sum(
+        points_for(lvl)
+        for cid, lvls in session.solved.items()
+        if not cid.startswith("live:")
+        for lvl in lvls
+    )
     return {
         "score": session.score,
-        "max_score": max_score,
+        "max_score": offline_max + live_max,
+        "offline": {"score": offline_score, "max": offline_max},
+        "live": {"score": session.score - offline_score, "max": live_max},
         "attempts": session.attempts,
         "solved": session.solved,
     }
@@ -234,6 +261,10 @@ def scoreboard(
 def reset_session(
     response: Response, session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE)
 ) -> dict:
+    if session_id and _LIVE_AVAILABLE:
+        from .live_state import clear_conn
+
+        clear_conn(session_id)
     session = reset(session_id)
     _session_response(response, session)
     return {"status": "reset", "score": session.score}

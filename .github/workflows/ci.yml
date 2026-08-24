@@ -24,6 +24,18 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest -q
 
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+
   audit:
     name: Dependency & secret audit
     runs-on: ubuntu-latest
