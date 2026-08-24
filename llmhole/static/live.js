@@ -9,6 +9,7 @@
     scenarios: [],
     scenario: null,
     level: "low",
+    levels: ["low", "medium", "high"],
     connected: false,
   };
 
@@ -57,6 +58,7 @@
       api("/api/live/scenarios"),
     ]);
     live.provider = prov;
+    live.levels = prov.levels || ["low", "medium", "high"];
     live.scenarios = scen.scenarios || [];
 
     const psel = $("#live-provider");
@@ -219,7 +221,7 @@
 
     const levels = $("#live-levels");
     levels.innerHTML = "";
-    for (const lvl of ["low", "medium", "high"]) {
+    for (const lvl of live.levels) {
       const b = el("button", "level-btn", lvl);
       b.type = "button";
       b.dataset.lvl = lvl;

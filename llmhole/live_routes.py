@@ -9,9 +9,18 @@ from __future__ import annotations
 from fastapi import APIRouter, Cookie, Response
 from pydantic import BaseModel, Field
 
+from .challenges import get as get_challenge
+from .challenges.base import Attempt
 from .flags import flag_for, level_key, points_for
 from .levels import Level
-from .live_engine import SUGGESTED_MODELS, list_models, list_scenarios, run_live
+from .live_engine import (
+    LIVE_LEVELS,
+    SUGGESTED_MODELS,
+    list_models,
+    list_scenarios,
+    live_level_allowed,
+    run_live,
+)
 from .live_state import check_budget, clear_conn, get_conn, record_usage, set_conn
 from .providers import (
     DEFAULT_ENDPOINT,
@@ -22,6 +31,24 @@ from .providers import (
 from .state import SESSION_COOKIE, get_or_create
 
 router = APIRouter(prefix="/api/live", tags=["live"])
+
+# Live Mode answers with a typed error body the chat UI renders inline, but the
+# HTTP status still has to be honest - the same contract /api/challenges/* uses.
+_STATUS = {
+    "bad_level": 400,
+    "level_not_available": 400,
+    "no_model": 400,
+    "endpoint_not_allowed": 400,
+    "unknown_scenario": 404,
+    "not_connected": 409,
+    "rate_limited": 429,
+}
+
+
+def _err(response: Response, status: int | None, kind: str, message: str) -> dict:
+    response.status_code = status or _STATUS.get(kind, 502)
+    return {"error": {"kind": kind, "message": message}}
+
 
 
 class ConnectIn(BaseModel):
@@ -46,17 +73,18 @@ def providers() -> dict:
         "provider": "ollama",
         "label": "Ollama (Local - no internet required)",
         "default_endpoint": DEFAULT_ENDPOINT,
+        "levels": [lvl.value for lvl in LIVE_LEVELS],
         "suggested_models": SUGGESTED_MODELS,
     }
 
 
 @router.get("/models")
-def models(endpoint: str = DEFAULT_ENDPOINT) -> dict:
+def models(response: Response, endpoint: str = DEFAULT_ENDPOINT) -> dict:
     """List the models actually installed in the user's Ollama server."""
     try:
         return {"models": list_models(endpoint), "endpoint": normalise_endpoint(endpoint)}
     except ProviderError as exc:
-        return {"error": {"kind": exc.kind, "message": exc.message}}
+        return _err(response, None, exc.kind, exc.message)
 
 
 @router.get("/scenarios")
@@ -65,9 +93,7 @@ def scenarios() -> dict:
     # Unbounded Consumption is demonstration-only in Live Mode: it is never sent
     # to a real model (that is exactly the resource-exhaustion we refuse to run on
     # the user's own machine). It runs against the offline engine instead.
-    from .challenges import get as _get
-
-    unbounded = _get("unbounded-consumption")
+    unbounded = get_challenge("unbounded-consumption")
     if unbounded is not None:
         pub = unbounded.public()
         items.append(
@@ -120,16 +146,18 @@ def connect(
 
     model = payload.model.strip()
     if not model:
-        return {"ok": False, "error": {"kind": "no_model", "message": "Pick a model name."}}
+        return {"ok": False, **_err(response, 400, "no_model", "Pick a model name.")}
 
     if not endpoint_allowed(payload.endpoint):
         return {
             "ok": False,
-            "error": {
-                "kind": "endpoint_not_allowed",
-                "message": "That endpoint host is not allow-listed. Set "
+            **_err(
+                response,
+                400,
+                "endpoint_not_allowed",
+                "That endpoint host is not allow-listed. Set "
                 "LLMHOLE_ALLOWED_LLM_HOSTS to permit it.",
-            },
+            ),
         }
 
     endpoint = normalise_endpoint(payload.endpoint)
@@ -157,19 +185,16 @@ def demo_attempt(
     """Run a demonstration-only challenge on the OFFLINE engine - no model, no
     scoring. Used for Unbounded Consumption in Live Mode.
     """
-    from .challenges import get as _get
-    from .challenges.base import Attempt
-
-    challenge = _get(challenge_id)
+    challenge = get_challenge(challenge_id)
     if challenge is None:
-        return {"error": {"kind": "unknown_scenario", "message": "Unknown challenge."}}
+        return _err(response, 404, "unknown_scenario", "Unknown challenge.")
 
     session = get_or_create(session_id)
     _cookie(response, session)
     try:
         level = Level.parse_strict(payload.level)
     except ValueError as exc:
-        return {"error": {"kind": "bad_level", "message": str(exc)}}
+        return _err(response, 400, "bad_level", str(exc))
 
     result = challenge.handler(Attempt(level=level, fields=payload.fields), session)
     return {
@@ -195,21 +220,30 @@ def live_attempt(
 
     conn = get_conn(session.id)
     if conn is None:
-        return {"error": {"kind": "not_connected", "message": "Connect a local model first."}}
+        return _err(response, 409, "not_connected", "Connect a local model first.")
 
     ok, reason = check_budget(conn)
     if not ok:
-        return {"error": {"kind": "rate_limited", "message": reason}}
+        return _err(response, 429, "rate_limited", reason)
 
     try:
         level = Level.parse_strict(payload.level)
     except ValueError as exc:
-        return {"error": {"kind": "bad_level", "message": str(exc)}}
+        return _err(response, 400, "bad_level", str(exc))
+
+    if not live_level_allowed(level):
+        allowed = ", ".join(lvl.value for lvl in LIVE_LEVELS)
+        return _err(
+            response,
+            400,
+            "level_not_available",
+            f"Live Mode does not offer the {level.value} level; choose one of: {allowed}.",
+        )
 
     try:
         result = run_live(scenario_id, level, payload.fields, conn)
     except ProviderError as exc:
-        return {"error": {"kind": exc.kind, "message": exc.message}}
+        return _err(response, None, exc.kind, exc.message)
 
     if not result.refused_by_guard:
         record_usage(conn)

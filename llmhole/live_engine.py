@@ -11,8 +11,9 @@ the box. That makes Live Mode a fully isolated "real model" sandbox.
 
 Guarantees:
   * No credentials are handled anywhere - there is nothing to leak.
-  * Every call is output-capped (`num_predict`) and the session is request-capped
-    so a runaway loop can't tie up the user's hardware.
+  * Every call is output-capped (`num_predict`) and the session is request-capped.
+    The cap is an accident brake, not a guarantee: resetting the session clears
+    it, which is deliberate - this is the user's own machine.
   * Failures degrade into typed, actionable errors; the offline lab is untouched.
 """
 
@@ -31,15 +32,22 @@ from .providers import (
     ProviderError,
 )
 
+# The levels Live Mode offers. VERY_HIGH is offline-only: its semantic intent
+# guard is a property of the mock engine, not something a local model enforces,
+# so scoring it here would let the score exceed the scoreboard maximum.
+LIVE_LEVELS = (Level.LOW, Level.MEDIUM, Level.HIGH)
+
+
+def live_level_allowed(level: Level) -> bool:
+    return level in LIVE_LEVELS
+
+
 SUGGESTED_MODELS = [
     {"name": "llama3.2", "note": "3B - fast, easy to jailbreak", "tools": False},
     {"name": "mistral", "note": "7B - classic, permissive", "tools": False},
     {"name": "llama3.1", "note": "8B - supports tool-calling", "tools": True},
     {"name": "qwen2.5", "note": "7B - supports tool-calling", "tools": True},
 ]
-
-
-LiveError = ProviderError
 
 
 @dataclass
@@ -96,7 +104,7 @@ def list_models(endpoint: str) -> list[str]:
 def run_live(scenario_id: str, level: Level, fields: dict, conn) -> LiveResult:
     challenge = scenario(scenario_id)
     if challenge is None:
-        raise LiveError("unknown_scenario", "That scenario is not available in Live Mode.")
+        raise ProviderError("unknown_scenario", "That scenario is not available in Live Mode.")
 
     adapter = challenge.live
     system, user, screen_blocks = adapter.build(fields, level)

@@ -29,6 +29,7 @@ from .challenges import all_challenges, get
 from .challenges.base import Attempt
 from .flags import flag_for, level_key, points_for, solutions_enabled, verify
 from .levels import LEVEL_NOTES, Level
+from .live_state import clear_conn
 from .state import SESSION_COOKIE, get_or_create, reset
 
 app = FastAPI(
@@ -53,7 +54,9 @@ if _STATIC.exists():
 # Optional Live Mode. If it cannot import (e.g. httpx missing), the offline lab
 # still runs - Live Mode just stays unavailable.
 try:
-    from .live_routes import router as live_router
+    # Deliberate function-body import: Live Mode is an optional dependency and
+    # this guard is what keeps a broken one from taking the offline lab down.
+    from .live_routes import router as live_router  # noqa: PLC0415
 
     app.include_router(live_router)
     _LIVE_AVAILABLE = True
@@ -262,8 +265,6 @@ def reset_session(
     response: Response, session_id: str | None = Cookie(default=None, alias=SESSION_COOKIE)
 ) -> dict:
     if session_id and _LIVE_AVAILABLE:
-        from .live_state import clear_conn
-
         clear_conn(session_id)
     session = reset(session_id)
     _session_response(response, session)

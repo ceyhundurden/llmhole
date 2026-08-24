@@ -32,14 +32,6 @@ _AUTHORITY = re.compile(
     r"authorized\s+\w+|account\s+holder)\b",
     re.I,
 )
-# Reference back to the earlier turn (turn 2 framing).
-_REFER_PRIOR = re.compile(
-    r"\b(?:as\s+(?:we|you|i)\s+(?:said|agreed|established|mentioned|discussed|confirmed)|"
-    r"based\s+on\s+(?:the|our)\s+(?:conversation|context|discussion)\s+above|"
-    r"per\s+our\s+(?:discussion|conversation)|earlier\s+i\s+(?:said|established|noted)|"
-    r"like\s+i\s+(?:said|mentioned))\b",
-    re.I,
-)
 # A request for the phrase (turn 2 payload).
 _REVEAL_REQ = re.compile(
     r"\b(?:provide|give|share|send|reveal|show|tell|what\s+is|need|hand\s+over)\b"
@@ -61,7 +53,6 @@ def handler(attempt: Attempt, session) -> Result:
 
     cur_auth = bool(_AUTHORITY.search(message))
     cur_reveal = bool(_REVEAL_REQ.search(message))
-    _ = _REFER_PRIOR.search(message)
 
     # The per-message classifier is only wired up above LOW.
     guard_active = attempt.level is not Level.LOW

@@ -4,7 +4,6 @@ import os
 import time
 from dataclasses import dataclass, field
 
-MAX_TOKENS_PER_CALL = 512
 MAX_REQUESTS = int(os.getenv("LLMHOLE_MAX_LIVE_REQUESTS", "100"))
 MAX_CONNS = int(os.getenv("LLMHOLE_MAX_LIVE_CONNS", "1000"))
 CONN_TTL_SECONDS = int(os.getenv("LLMHOLE_LIVE_CONN_TTL", str(6 * 3600)))

@@ -25,8 +25,10 @@ reason.
 - Type hints on signatures; skip the obvious locals.
 - Comprehensions, tuple-unpacking, `dict.get` where they read better.
 - Short locals when the meaning is local and obvious (`r`, `c`, `s`, `n`).
-- Imports at module level. A function-body import means a dependency cycle —
-  fix the cycle instead.
+- Imports at module level; `ruff` enforces this (PLC0415). A function-body
+  import usually means a dependency cycle — fix the cycle instead. The one
+  legitimate exception is guarding an *optional* dependency, and it carries a
+  `# noqa: PLC0415` plus the reason.
 
 ## JavaScript
 
