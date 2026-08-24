@@ -68,46 +68,61 @@ Solve a level and you get a signed **flag** (`AISEC{...}`) and points
 (low 10 / medium 25 / high 50 / very-high 80), tracked per session for a mini
 scoreboard.
 
-## Quick Start
+## Installation
 
 Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
 
+**Prerequisites** — either path works:
+- **Docker** (recommended): Docker Engine / Docker Desktop with Compose v2.
+- **or Python 3.12+** if you'd rather run it without Docker.
+- **Optional:** [Ollama](https://ollama.com) — only needed for the Live Arena
+  (a real local model). The default lab is fully offline and needs nothing else.
+
+**1. Get the code**
+
 ```bash
-git clone <your-fork-url> aisec-lab
+git clone https://github.com/ceyhundurden/aisec-lab.git
 cd aisec-lab
-cp .env.example .env      # optional: change the port / flag secret
+cp .env.example .env      # optional: change the port / flag secret / bind
+```
+
+**2a. Run with Docker (recommended)**
+
+```bash
 docker compose up --build
 ```
 
-Open <http://localhost:8000> (or the `AISEC_PORT` you set). That's it — the
-default lab is fully offline and needs no API key.
-
-## Run it
-
-### Docker (single container)
+**2b. Or run with Python**
 
 ```bash
-docker build -t aisec-lab .
-docker run --rm -p 8000:8000 aisec-lab
-```
-
-Open <http://localhost:8000>.
-
-### Local (Python 3.12+)
-
-```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
 uvicorn aisec.main:app --reload
 ```
 
-### Tests
+Open <http://localhost:8000> (or the `AISEC_PORT` you set) and start with the
+**Practice** tab — no key, no internet.
+
+**3. (Optional) Enable Live Arena**
+
+```bash
+ollama pull llama3.2      # a small, easy-to-jailbreak model
+ollama serve              # usually already running
+```
+
+Then open the **Live Arena** tab, keep the pre-filled endpoint, pick your model,
+Connect. See [Live Mode](#live-mode-optional--a-local-model-via-ollama) for the
+Docker networking note and model suggestions.
+
+**Run the tests**
 
 ```bash
 pytest -q
 ```
 
-The suite proves every reference exploit still solves its level and that the
-guardrails still bite where they should — so the lab stays exploitable *and*
+The test suite proves every reference exploit still solves its level and that
+the guardrails still bite where they should — so the lab stays exploitable *and*
 non-trivial as it changes.
 
 ## Live Mode (optional — a local model via Ollama)
@@ -240,6 +255,18 @@ tests/            engine unit tests + per-challenge solve/guardrail tests
 3. Import it in `aisec/challenges/__init__.py`.
 4. The parametrised test in `tests/test_challenges.py` will automatically check
    that your reference solutions solve every level.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE) — see [NOTICE](NOTICE) for the
+attribution and the intentionally-vulnerable warning that must travel with any
+redistribution.
+
+A licence grants permission; it does not police behaviour. The real guardrails
+around this project are the **run-it-locally-only** warning above and the scope
+contract in [SECURITY.md](SECURITY.md) — that document is what tells you (and
+any contributor) which weaknesses are the curriculum and which would be genuine
+bugs. Read it before you deploy, fork, or file an issue.
 
 ## Disclaimer
 
