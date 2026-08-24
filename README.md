@@ -1,5 +1,10 @@
 # AISEC Lab
 
+[![CI](https://github.com/ceyhundurden/ai-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ceyhundurden/ai-lab/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![OWASP LLM Top 10](https://img.shields.io/badge/OWASP-LLM%20Top%2010%20(2025)-red.svg)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+
 A deliberately vulnerable **AI / LLM application** you attack in the browser —
 the same idea as [bWAPP](http://www.itsecgames.org/) or DVWA, but the target is
 an AI system instead of a classic web app. Pick a challenge, pick a security
@@ -83,7 +88,7 @@ Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
 ```bash
 git clone https://github.com/ceyhundurden/ai-lab.git
 cd ai-lab
-cp .env.example .env      # optional: change the port / flag secret / bind
+cp .env.example .env
 ```
 
 **2a. Run with Docker (recommended)**
@@ -96,10 +101,12 @@ docker compose up --build
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
 uvicorn aisec.main:app --reload
 ```
+
+Activate the virtualenv first if your shell needs it: `.venv\Scripts\activate`
+on Windows, `source .venv/bin/activate` on macOS and Linux.
 
 Open <http://localhost:8000> (or the `AISEC_PORT` you set) and start with the
 **Practice** tab — no key, no internet.
@@ -107,8 +114,8 @@ Open <http://localhost:8000> (or the `AISEC_PORT` you set) and start with the
 **3. (Optional) Enable Live Arena**
 
 ```bash
-ollama pull llama3.2      # a small, easy-to-jailbreak model
-ollama serve              # usually already running
+ollama pull llama3.2
+ollama serve
 ```
 
 Then open the **Live Arena** tab, keep the pre-filled endpoint, pick your model,
@@ -138,8 +145,8 @@ misbehaving, with no internet and no API key.
   anywhere and nothing to leak.
 - **You run the model.** Install Ollama, then:
   ```bash
-  ollama pull llama3.2      # or mistral, llama3.1, qwen2.5, ...
-  ollama serve              # usually already running
+  ollama pull llama3.2
+  ollama serve
   ```
   In the Live Arena tab, keep the default endpoint, type the model name, Connect.
 - **Bounded by design.** Every call is output-capped (`num_predict=512`) and the
