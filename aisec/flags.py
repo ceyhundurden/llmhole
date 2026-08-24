@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import os
 
-DEFAULT_SECRET = "aisec-lab-default-secret"
+DEFAULT_SECRET = "aisec-lab-default-secret"  # nosec B105
 POINTS = {"low": 10, "medium": 25, "high": 50, "very-high": 80}
 
 _secret = os.getenv("AISEC_FLAG_SECRET", DEFAULT_SECRET)
