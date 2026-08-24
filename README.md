@@ -88,8 +88,18 @@ Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
 ```bash
 git clone https://github.com/ceyhundurden/llmhole.git
 cd llmhole
+```
+
+Nothing else is required — every setting has a working default. Only if you want
+to change the port, the flag secret or the bind address, copy the example config
+and edit it:
+
+```bash
 cp .env.example .env
 ```
+
+On Windows `cmd.exe` that copy command is `copy .env.example .env` (PowerShell
+and Git Bash both take `cp`).
 
 **2a. Run with Docker (recommended)**
 
