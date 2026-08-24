@@ -55,7 +55,7 @@ jobs:
       - name: bandit
         run: |
           pip install bandit
-          bandit -r aisec -x aisec/challenges,aisec/levels,aisec/engine
+          bandit -r llmhole -x llmhole/challenges,llmhole/levels,llmhole/engine
 
   image:
     name: Build image & scan (Trivy)
@@ -64,11 +64,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Build image
-        run: docker build -t aisec-lab:ci .
+        run: docker build -t llmhole:ci .
       - name: Trivy scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: aisec-lab:ci
+          image-ref: llmhole:ci
           format: table
           exit-code: "1"
           ignore-unfixed: true

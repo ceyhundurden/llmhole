@@ -9,17 +9,17 @@ from urllib.parse import urlparse
 
 import httpx
 
-DEFAULT_ENDPOINT = os.getenv("AISEC_OLLAMA_ENDPOINT", "http://localhost:11434").rstrip("/")
+DEFAULT_ENDPOINT = os.getenv("LLMHOLE_OLLAMA_ENDPOINT", "http://localhost:11434").rstrip("/")
 
 ALLOWED_LLM_HOSTS = {
     h.strip().lower()
     for h in os.getenv(
-        "AISEC_ALLOWED_LLM_HOSTS", "localhost,127.0.0.1,::1,host.docker.internal"
+        "LLMHOLE_ALLOWED_LLM_HOSTS", "localhost,127.0.0.1,::1,host.docker.internal"
     ).split(",")
     if h.strip()
 }
 ALLOWED_LLM_PORTS = {
-    int(p) for p in os.getenv("AISEC_ALLOWED_LLM_PORTS", "11434").split(",") if p.strip()
+    int(p) for p in os.getenv("LLMHOLE_ALLOWED_LLM_PORTS", "11434").split(",") if p.strip()
 }
 
 MAX_TOKENS_PER_CALL = 512
@@ -78,7 +78,7 @@ def require_allowed(endpoint: str) -> None:
     raise ProviderError(
         "endpoint_not_allowed",
         "That endpoint host is not in the allow-list "
-        f"({', '.join(sorted(ALLOWED_LLM_HOSTS))}). Set AISEC_ALLOWED_LLM_HOSTS "
+        f"({', '.join(sorted(ALLOWED_LLM_HOSTS))}). Set LLMHOLE_ALLOWED_LLM_HOSTS "
         "to permit another host.",
     )
 

@@ -1,6 +1,6 @@
 # Security policy & scope contract
 
-AISEC Lab is **intentionally vulnerable** — that is the product. This document
+LLMHole is **intentionally vulnerable** — that is the product. This document
 draws the one line that matters: which weaknesses are the *curriculum* (keep
 them, they are the point) and which would be *real* bugs in the lab's own
 infrastructure (these must stay fixed). The regression suite in
@@ -33,9 +33,9 @@ Infrastructure of the lab itself. A regression here is a genuine vulnerability.
 
 | Real bug class | Control | Test |
 |----------------|---------|------|
-| Server-side request forgery via the Live endpoint | Host allow-list (`AISEC_ALLOWED_LLM_HOSTS`), no redirects, upstream body never reflected | `test_endpoint_allow_list_*`, `test_upstream_body_is_not_reflected` |
-| Predictable default flag secret | `AISEC_CTF_MODE=1` fails fast on the default secret | `test_ctf_mode_*` |
-| Reference solutions exposed during a CTF | Off by default when `AISEC_CTF_MODE=1` | — |
+| Server-side request forgery via the Live endpoint | Host allow-list (`LLMHOLE_ALLOWED_LLM_HOSTS`), no redirects, upstream body never reflected | `test_endpoint_allow_list_*`, `test_upstream_body_is_not_reflected` |
+| Predictable default flag secret | `LLMHOLE_CTF_MODE=1` fails fast on the default secret | `test_ctf_mode_*` |
+| Reference solutions exposed during a CTF | Off by default when `LLMHOLE_CTF_MODE=1` | — |
 | Container exposed to the network by default | Compose binds `127.0.0.1`; read-only rootfs, dropped caps, no-new-privileges, mem/pids limits | — |
 | Unintended DOM XSS (model names) | All model-name output is HTML-escaped | — |
 | Unbounded session memory (DoS) | Session TTL + count cap + per-bucket cap | `test_bucket_is_capped`, `test_expired_sessions_are_pruned` |
@@ -45,14 +45,14 @@ Infrastructure of the lab itself. A regression here is a genuine vulnerability.
 
 | Env var | Default | Purpose |
 |---------|---------|---------|
-| `AISEC_BIND` | `127.0.0.1` | Interface the container publishes on |
-| `AISEC_CTF_MODE` | `0` | Fail fast on default secret; hide solutions |
-| `AISEC_FLAG_SECRET` | dev default | HMAC key for flags — **must** be set in CTF mode |
-| `AISEC_ALLOW_SOLUTIONS` | `1` (`0` in CTF) | Serve reference solutions |
-| `AISEC_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
-| `AISEC_MAX_SESSIONS` | `5000` | Session table cap |
-| `AISEC_SESSION_TTL` | `21600` | Session idle TTL (seconds) |
-| `AISEC_MAX_BUCKET_ITEMS` | `200` | Per-session scratch bucket cap |
+| `LLMHOLE_BIND` | `127.0.0.1` | Interface the container publishes on |
+| `LLMHOLE_CTF_MODE` | `0` | Fail fast on default secret; hide solutions |
+| `LLMHOLE_FLAG_SECRET` | dev default | HMAC key for flags — **must** be set in CTF mode |
+| `LLMHOLE_ALLOW_SOLUTIONS` | `1` (`0` in CTF) | Serve reference solutions |
+| `LLMHOLE_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
+| `LLMHOLE_MAX_SESSIONS` | `5000` | Session table cap |
+| `LLMHOLE_SESSION_TTL` | `21600` | Session idle TTL (seconds) |
+| `LLMHOLE_MAX_BUCKET_ITEMS` | `200` | Per-session scratch bucket cap |
 
 ## Reporting
 

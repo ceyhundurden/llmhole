@@ -1,24 +1,24 @@
-# AISEC Lab - self-hosted, intentionally vulnerable AI/LLM security playground.
+# LLMHole - self-hosted, intentionally vulnerable AI/LLM security playground.
 # You run this in YOUR OWN environment. Do not expose it to the public internet.
 services:
-  aisec-lab:
+  llmhole:
     build: .
-    image: aisec-lab:latest
-    container_name: aisec-lab
+    image: llmhole:latest
+    container_name: llmhole
     ports:
       # Bound to loopback by default: this app is intentionally vulnerable, so the
-      # safe default must be "not reachable from the network". Override AISEC_BIND
+      # safe default must be "not reachable from the network". Override LLMHOLE_BIND
       # (e.g. 0.0.0.0) only if you really mean to expose it.
-      - "${AISEC_BIND:-127.0.0.1}:${AISEC_PORT:-8000}:8000"
+      - "${LLMHOLE_BIND:-127.0.0.1}:${LLMHOLE_PORT:-8000}:8000"
     environment:
       # Config only. Live Mode uses a LOCAL Ollama server (no key, no cost) whose
       # endpoint is chosen in the browser UI - nothing sensitive is stored here.
-      AISEC_FLAG_SECRET: "${AISEC_FLAG_SECRET:-aisec-lab-default-secret}"
-      AISEC_ALLOW_SOLUTIONS: "${AISEC_ALLOW_SOLUTIONS:-1}"
+      LLMHOLE_FLAG_SECRET: "${LLMHOLE_FLAG_SECRET:-llmhole-default-secret}"
+      LLMHOLE_ALLOW_SOLUTIONS: "${LLMHOLE_ALLOW_SOLUTIONS:-1}"
       # From inside the container, the host's Ollama is at host.docker.internal.
       # This makes the Live Arena default endpoint "just work" out of the box.
       # Override in .env if your Ollama runs elsewhere.
-      AISEC_OLLAMA_ENDPOINT: "${AISEC_OLLAMA_ENDPOINT:-http://host.docker.internal:11434}"
+      LLMHOLE_OLLAMA_ENDPOINT: "${LLMHOLE_OLLAMA_ENDPOINT:-http://host.docker.internal:11434}"
       PYTHONDONTWRITEBYTECODE: "1"  # required for read_only rootfs
     # Lets the container reach an Ollama server running on the host. In the Live
     # Arena, use endpoint http://host.docker.internal:11434 when Ollama runs on

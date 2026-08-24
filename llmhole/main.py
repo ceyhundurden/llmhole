@@ -1,4 +1,4 @@
-"""FastAPI surface for the AISEC Lab.
+"""FastAPI surface for the LLMHole.
 
 A single-page UI plus a small JSON API:
 
@@ -32,7 +32,7 @@ from .levels import LEVEL_NOTES, Level
 from .state import SESSION_COOKIE, get_or_create, reset
 
 app = FastAPI(
-    title="AISEC Lab",
+    title="LLMHole",
     version=__version__,
     description="Intentionally vulnerable AI/LLM app for security training. Do not deploy to the public internet.",
 )
@@ -244,4 +244,4 @@ def index() -> HTMLResponse:
     page = _STATIC / "index.html"
     if page.exists():
         return HTMLResponse(page.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>AISEC Lab</h1><p>UI asset missing.</p>", status_code=200)
+    return HTMLResponse("<h1>LLMHole</h1><p>UI asset missing.</p>", status_code=200)

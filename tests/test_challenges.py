@@ -1,12 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from aisec.challenges import all_challenges, get
-from aisec.challenges.base import Attempt
-from aisec.flags import flag_for, verify
-from aisec.levels import Level
-from aisec.main import app
-from aisec.state import Session
+from llmhole.challenges import all_challenges, get
+from llmhole.challenges.base import Attempt
+from llmhole.flags import flag_for, verify
+from llmhole.levels import Level
+from llmhole.main import app
+from llmhole.state import Session
 
 
 def _run(challenge_id, level, fields):
@@ -176,7 +176,7 @@ def test_multiturn_low_allows_single_shot():
 # --- persona flavour ------------------------------------------------------
 
 def test_leak_is_prefixed_with_a_confession():
-    from aisec.persona import CONFESSIONS
+    from llmhole.persona import CONFESSIONS
 
     result = _run(
         "prompt-injection",
@@ -192,7 +192,7 @@ def test_leak_is_prefixed_with_a_confession():
 def test_flags_are_deterministic_and_verify():
     f = flag_for("prompt-injection", "low")
     assert verify("prompt-injection", "low", f)
-    assert not verify("prompt-injection", "low", "AISEC{wrong}")
+    assert not verify("prompt-injection", "low", "HOLE{wrong}")
 
 
 # --- API smoke ------------------------------------------------------------
@@ -223,4 +223,4 @@ def test_attempt_endpoint_awards_flag():
     assert r.status_code == 200
     body = r.json()
     assert body["solved"] is True
-    assert body["flag"].startswith("AISEC{")
+    assert body["flag"].startswith("HOLE{")

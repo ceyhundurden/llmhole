@@ -12,12 +12,12 @@ from dataclasses import dataclass, field
 
 from .flags import points_for
 
-SESSION_COOKIE = "aisec_session"
+SESSION_COOKIE = "llmhole_session"
 
 # Bounds so a cookie-less request loop can't exhaust the host's memory.
-MAX_SESSIONS = int(os.getenv("AISEC_MAX_SESSIONS", "5000"))
-SESSION_TTL_SECONDS = int(os.getenv("AISEC_SESSION_TTL", str(6 * 3600)))
-MAX_BUCKET_ITEMS = int(os.getenv("AISEC_MAX_BUCKET_ITEMS", "200"))
+MAX_SESSIONS = int(os.getenv("LLMHOLE_MAX_SESSIONS", "5000"))
+SESSION_TTL_SECONDS = int(os.getenv("LLMHOLE_SESSION_TTL", str(6 * 3600)))
+MAX_BUCKET_ITEMS = int(os.getenv("LLMHOLE_MAX_BUCKET_ITEMS", "200"))
 
 
 @dataclass

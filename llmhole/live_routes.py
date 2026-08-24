@@ -131,7 +131,7 @@ def connect(
             "error": {
                 "kind": "endpoint_not_allowed",
                 "message": "That endpoint host is not allow-listed. Set "
-                "AISEC_ALLOWED_LLM_HOSTS to permit it.",
+                "LLMHOLE_ALLOWED_LLM_HOSTS to permit it.",
             },
         }
 

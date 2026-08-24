@@ -6,12 +6,12 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from aisec import live_engine, providers
-from aisec.challenges import c01_prompt_injection as c01
-from aisec.levels import Level
-from aisec.live_engine import LiveError, run_live
-from aisec.live_state import MAX_REQUESTS, LiveConn
-from aisec.main import app
+from llmhole import live_engine, providers
+from llmhole.challenges import c01_prompt_injection as c01
+from llmhole.levels import Level
+from llmhole.live_engine import LiveError, run_live
+from llmhole.live_state import MAX_REQUESTS, LiveConn
+from llmhole.main import app
 
 
 # --- transport doubles -----------------------------------------------------
@@ -137,7 +137,7 @@ def _boom_client(err):
 
 
 def test_endpoint_is_normalised():
-    from aisec.live_engine import normalise_endpoint
+    from llmhole.live_engine import normalise_endpoint
 
     assert normalise_endpoint("localhost:11434") == "http://localhost:11434"
     assert normalise_endpoint("http://host:1/") == "http://host:1"
@@ -209,7 +209,7 @@ def test_attempt_end_to_end_with_mocked_ollama(monkeypatch):
     )
     body = r.json()
     assert body["solved"] is True
-    assert body["flag"].startswith("AISEC{")
+    assert body["flag"].startswith("HOLE{")
     assert body["meta"]["provider"] == "ollama"
 
 

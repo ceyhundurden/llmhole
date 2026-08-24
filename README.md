@@ -1,6 +1,6 @@
-# AISEC Lab
+# LLMHole
 
-[![CI](https://github.com/ceyhundurden/ai-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ceyhundurden/ai-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/ceyhundurden/llmhole/actions/workflows/ci.yml/badge.svg)](https://github.com/ceyhundurden/llmhole/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![OWASP LLM Top 10](https://img.shields.io/badge/OWASP-LLM%20Top%2010%20(2025)-red.svg)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
@@ -16,14 +16,14 @@ level, craft a payload, and watch it land.
 ## Why this exists
 
 Web-app security has bWAPP. AI security did not have an equivalent playground
-that runs offline, for free, deterministically. AISEC Lab fills that gap: every
+that runs offline, for free, deterministically. LLMHole fills that gap: every
 challenge is a real class of LLM vulnerability from the
 **OWASP LLM Top 10 (2025)**, reproduced against a mock model so the attack is
 repeatable and needs no API key.
 
 ## The mock model (the whole trick)
 
-There is no real LLM and no network call. `aisec/engine.py` is a small,
+There is no real LLM and no network call. `llmhole/engine.py` is a small,
 deliberately *gullible* interpreter that behaves like a badly-built LLM app: it
 reads **every block in its context window** — system prompt, your message,
 retrieved documents, tool output — extracts anything that looks like an
@@ -69,7 +69,7 @@ with its real failure mode.
   a line whose continuation is the secret) — which is closer to how real LLM01
   attacks actually work.
 
-Solve a level and you get a signed **flag** (`AISEC{...}`) and points
+Solve a level and you get a signed **flag** (`HOLE{...}`) and points
 (low 10 / medium 25 / high 50 / very-high 80), tracked per session for a mini
 scoreboard.
 
@@ -86,8 +86,8 @@ Self-hosted, like bWAPP/DVWA — you run it in **your own** environment.
 **1. Get the code**
 
 ```bash
-git clone https://github.com/ceyhundurden/ai-lab.git
-cd ai-lab
+git clone https://github.com/ceyhundurden/llmhole.git
+cd llmhole
 cp .env.example .env
 ```
 
@@ -102,13 +102,13 @@ docker compose up --build
 ```bash
 python -m venv .venv
 pip install -r requirements-dev.txt
-uvicorn aisec.main:app --reload
+uvicorn llmhole.main:app --reload
 ```
 
 Activate the virtualenv first if your shell needs it: `.venv\Scripts\activate`
 on Windows, `source .venv/bin/activate` on macOS and Linux.
 
-Open <http://localhost:8000> (or the `AISEC_PORT` you set) and start with the
+Open <http://localhost:8000> (or the `LLMHOLE_PORT` you set) and start with the
 **Practice** tab — no key, no internet.
 
 **3. (Optional) Enable Live Arena**
@@ -166,9 +166,9 @@ If Ollama isn't running or the model isn't pulled, Live Mode returns a clear,
 actionable error and the offline lab is completely unaffected.
 
 The endpoint is **pre-filled for you**: `docker compose up` ships
-`AISEC_OLLAMA_ENDPOINT=http://host.docker.internal:11434` (the host's Ollama as
+`LLMHOLE_OLLAMA_ENDPOINT=http://host.docker.internal:11434` (the host's Ollama as
 seen from inside the container, mapped for Linux too), and a bare `uvicorn` run
-defaults to `http://localhost:11434`. Override it with `AISEC_OLLAMA_ENDPOINT`
+defaults to `http://localhost:11434`. Override it with `LLMHOLE_OLLAMA_ENDPOINT`
 in `.env` if your Ollama lives elsewhere.
 
 Click **↻ Installed** next to the model field to list the models actually pulled
@@ -201,7 +201,7 @@ The UI is a thin client over a small JSON API:
 | POST | `/api/challenges/{id}/attempt` | Run an attack (`{level, fields}`) |
 | POST | `/api/challenges/{id}/verify` | Submit a flag for points |
 | GET | `/api/hint/{id}?level=N` | Progressive hints |
-| GET | `/api/solution/{id}` | Reference exploits (disable with `AISEC_ALLOW_SOLUTIONS=0`) |
+| GET | `/api/solution/{id}` | Reference exploits (disable with `LLMHOLE_ALLOW_SOLUTIONS=0`) |
 | GET | `/api/scoreboard` | Session score |
 | POST | `/api/reset` | Wipe your session |
 | GET | `/api/live/providers` | Live Mode: provider (Ollama) + suggested models |
@@ -215,12 +215,12 @@ The UI is a thin client over a small JSON API:
 
 | Env var | Default | Meaning |
 |---------|---------|---------|
-| `AISEC_FLAG_SECRET` | dev default | HMAC key for flags; **required** in CTF mode |
-| `AISEC_ALLOW_SOLUTIONS` | `1` (`0` in CTF) | Set to `0` to hide the reference solutions |
-| `AISEC_CTF_MODE` | `0` | Fail fast on the default secret; hide solutions |
-| `AISEC_BIND` | `127.0.0.1` | Interface the container publishes on |
-| `AISEC_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
-| `AISEC_MAX_SESSIONS` / `AISEC_SESSION_TTL` / `AISEC_MAX_BUCKET_ITEMS` | `5000` / `21600` / `200` | Session memory bounds |
+| `LLMHOLE_FLAG_SECRET` | dev default | HMAC key for flags; **required** in CTF mode |
+| `LLMHOLE_ALLOW_SOLUTIONS` | `1` (`0` in CTF) | Set to `0` to hide the reference solutions |
+| `LLMHOLE_CTF_MODE` | `0` | Fail fast on the default secret; hide solutions |
+| `LLMHOLE_BIND` | `127.0.0.1` | Interface the container publishes on |
+| `LLMHOLE_ALLOWED_LLM_HOSTS` | `localhost,127.0.0.1,::1,host.docker.internal` | SSRF allow-list for Live Mode |
+| `LLMHOLE_MAX_SESSIONS` / `LLMHOLE_SESSION_TTL` / `LLMHOLE_MAX_BUCKET_ITEMS` | `5000` / `21600` / `200` | Session memory bounds |
 
 ## Security & scope
 
@@ -229,14 +229,14 @@ The lab is vulnerable **on purpose**, but its own infrastructure is not.
 (keep them) and real bugs in the lab itself (SSRF, predictable flag secret,
 network exposure, unbounded memory, …), each locked by
 [`tests/test_out_of_scope.py`](tests/test_out_of_scope.py). Hosting a CTF? Set a
-unique `AISEC_FLAG_SECRET` and `AISEC_CTF_MODE=1`. The Docker image binds to
+unique `LLMHOLE_FLAG_SECRET` and `LLMHOLE_CTF_MODE=1`. The Docker image binds to
 loopback, runs read-only with dropped capabilities, and only reaches
 allow-listed LLM hosts.
 
 ## Project layout
 
 ```
-aisec/
+llmhole/
   engine.py       the gullible mock model + directive extraction (incl. elicitation)
   persona.py      randomised confession lines for landed attacks
   levels.py       the four security levels and their (broken) guardrails
@@ -254,12 +254,12 @@ tests/            engine unit tests + per-challenge solve/guardrail tests
 
 ## Adding a challenge
 
-1. Add `aisec/challenges/cNN_your_thing.py` with a `handler(attempt, session)`
+1. Add `llmhole/challenges/cNN_your_thing.py` with a `handler(attempt, session)`
    that builds a context window, calls `runtime.complete(...)`, and sets
    `Result.solved`.
 2. `register(Challenge(...))` with fields, hints, and a reference `solution` per
    level.
-3. Import it in `aisec/challenges/__init__.py`.
+3. Import it in `llmhole/challenges/__init__.py`.
 4. The parametrised test in `tests/test_challenges.py` will automatically check
    that your reference solutions solve every level.
 

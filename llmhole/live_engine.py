@@ -1,7 +1,7 @@
 """Optional Live Mode - run a subset of challenges against a *local* LLM.
 
 This module is completely separate from the deterministic offline engine
-(`aisec/engine.py`) and is never imported by it. The default lab stays offline,
+(`llmhole/engine.py`) and is never imported by it. The default lab stays offline,
 free and deterministic; nothing here runs unless the user connects a model.
 
 Live Mode targets **Ollama** (https://ollama.com), a local LLM runtime the user

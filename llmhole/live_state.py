@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 
 MAX_TOKENS_PER_CALL = 512
-MAX_REQUESTS = int(os.getenv("AISEC_MAX_LIVE_REQUESTS", "100"))
+MAX_REQUESTS = int(os.getenv("LLMHOLE_MAX_LIVE_REQUESTS", "100"))
 
 
 @dataclass

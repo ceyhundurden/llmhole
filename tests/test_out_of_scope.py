@@ -10,10 +10,10 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aisec import live_engine, providers
-from aisec.flags import flag_for, level_key
-from aisec.main import app
-from aisec.state import MAX_BUCKET_ITEMS, Session
+from llmhole import live_engine, providers
+from llmhole.flags import flag_for, level_key
+from llmhole.main import app
+from llmhole.state import MAX_BUCKET_ITEMS, Session
 
 client = TestClient(app)
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -47,10 +47,10 @@ def test_provider_error_message_hides_status_code():
 
 
 def test_multiturn_history_is_capped():
-    from aisec.challenges import get
-    from aisec.challenges.base import Attempt
-    from aisec.levels import Level
-    from aisec.state import MAX_BUCKET_ITEMS
+    from llmhole.challenges import get
+    from llmhole.challenges.base import Attempt
+    from llmhole.levels import Level
+    from llmhole.state import MAX_BUCKET_ITEMS
 
     ch = get("multiturn-trust")
     s = Session(id="mt-cap")
@@ -92,7 +92,7 @@ def test_bucket_is_capped():
 
 
 def test_expired_sessions_are_pruned(monkeypatch):
-    import aisec.state as state
+    import llmhole.state as state
 
     import time
 
@@ -126,25 +126,25 @@ def test_live_flag_verifies_only_on_live_plane():
 
 def test_ctf_mode_rejects_default_secret():
     env = dict(os.environ)
-    env["AISEC_CTF_MODE"] = "1"
-    env.pop("AISEC_FLAG_SECRET", None)
+    env["LLMHOLE_CTF_MODE"] = "1"
+    env.pop("LLMHOLE_FLAG_SECRET", None)
     r = subprocess.run(
-        [sys.executable, "-c", "import aisec.flags"],
+        [sys.executable, "-c", "import llmhole.flags"],
         env=env,
         capture_output=True,
         text=True,
         cwd=str(REPO_ROOT),
     )
     assert r.returncode != 0
-    assert "AISEC_FLAG_SECRET" in r.stderr
+    assert "LLMHOLE_FLAG_SECRET" in r.stderr
 
 
 def test_ctf_mode_starts_with_a_custom_secret():
     env = dict(os.environ)
-    env["AISEC_CTF_MODE"] = "1"
-    env["AISEC_FLAG_SECRET"] = "a-unique-ctf-secret"
+    env["LLMHOLE_CTF_MODE"] = "1"
+    env["LLMHOLE_FLAG_SECRET"] = "a-unique-ctf-secret"
     r = subprocess.run(
-        [sys.executable, "-c", "import aisec.flags; print('ok')"],
+        [sys.executable, "-c", "import llmhole.flags; print('ok')"],
         env=env,
         capture_output=True,
         text=True,

@@ -1,4 +1,4 @@
-AISEC Lab
+LLMHole
 Copyright 2026 ceyhundurden
 
 This product includes software developed by ceyhundurden.
@@ -18,7 +18,7 @@ limitations under the License.
 --------------------------------------------------------------------------
 IMPORTANT - INTENTIONALLY VULNERABLE SOFTWARE
 
-AISEC Lab is a security training tool that is deliberately insecure by
+LLMHole is a security training tool that is deliberately insecure by
 design. It exists to teach AI/LLM vulnerability classes (OWASP LLM Top 10)
 in a controlled, local environment.
 
